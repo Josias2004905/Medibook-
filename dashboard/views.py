@@ -1,13 +1,13 @@
 """Dashboard views for patient, doctor, and admin roles."""
 
 from django.views.generic import TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin
+
 from django.db.models import Count, Q
-from datetime import date, timedelta
+from datetime import timedelta
 
 from accounts.mixins import PatientRequiredMixin, DoctorRequiredMixin, AdminRequiredMixin
 from appointments.models import Appointment
-from doctors.models import DoctorProfile, Specialty
+from doctors.models import DoctorProfile
 from patients.models import PatientProfile
 from notifications.models import Notification
 from schedules.models import DoctorLeave
