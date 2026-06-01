@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Availability — MediBook{% endblock %}
+{% block content %}
+<div class="page-header"><div class="container"><h1><i class="fas fa-clock me-2"></i>{% if form.instance.pk %}Edit{% else %}Add{% endif %} Availability</h1></div></div>
+<div class="container pb-5" style="max-width:560px;">
+    <div class="card-dark p-4">
+        <form method="post">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <button type="submit" class="btn btn-primary w-100 mt-4 py-2.5">
+                <i class="fas fa-save me-2"></i>Save Availability
+            </button>
+        </form>
+        <a href="{% url 'availability_list' %}" class="btn btn-outline-medibook mt-2"><i class="fas fa-arrow-left me-1"></i>Back</a>
+    </div>
+</div>
+{% endblock %}

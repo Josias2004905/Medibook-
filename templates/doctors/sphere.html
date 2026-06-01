@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Doctor Sphere — MediBook{% endblock %}
+
+{% block extra_css %}
+<style>
+  .doctor-sphere-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .doctor-sphere-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  .doctor-sphere-header h1 {
+    color: var(--text-primary);
+    margin-bottom: 10px;
+  }
+  .doctor-sphere-header p {
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .doctor-sphere-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .doctor-sphere-controls button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .doctor-sphere-controls button:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+  }
+  .doctor-sphere-controls .btn-auto {
+    background: var(--primary);
+    color: white;
+  }
+  .doctor-sphere-controls .btn-reset {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-muted);
+  }
+  .doctor-sphere-info {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 20px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="doctor-sphere-container">
+  <div class="doctor-sphere-header">
+    <h1><i class="fa-solid fa-user-doctor me-2" style="color:var(--primary);"></i>Doctor Sphere</h1>
+    <p>Explore our specialists in an interactive 3D layout. Click on any doctor to view their profile.</p>
+  </div>
+
+  <div class="doctor-sphere-controls">
+    <button id="toggleAutoRotate" class="btn-auto">Enable Auto-Rotate</button>
+    <button id="resetView" class="btn-reset">Reset View</button>
+  </div>
+
+  <div id="doctorSphere" class="doctor-sphere"></div>
+
+  <div class="doctor-sphere-info">
+    <p>Drag to rotate • Click on a doctor to view details • Double-tap to reset on mobile</p>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/doctor-sphere.js' %}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the DoctorSphere component
+    const sphereContainer = document.getElementById('doctorSphere');
+    const doctorData = JSON.parse('{{ doctor_data|safe }}');
+    
+    // Convert doctor data to the format expected by DoctorSphere
+    const images = doctorData.map(doc => ({
+      id: doc.id,
+      src: doc.src,
+      alt: doc.name,
+      name: doc.name,
+      specialty: doc.specialty,
+      bio: doc.bio,
+      rating: doc.rating,
+      url: doc.url || '#'
+    }));
+    
+    const sphere = new DoctorSphere(sphereContainer, images, {
+      containerSize: 500,
+      sphereRadius: 200,
+      dragSensitivity: 0.5,
+      autoRotate: false,
+      autoRotateSpeed: 0.2
+    });
+    
+    // Handle doctor selection
+    sphere.onSelect = function(doc, index) {
+      // Navigate to doctor detail page
+      window.location.href = doc.url;
+    };
+    
+    // Toggle auto-rotate
+    const toggleBtn = document.getElementById('toggleAutoRotate');
+    toggleBtn.addEventListener('click', function() {
+      const isAutoRotating = sphere.opts.autoRotate;
+      sphere.opts.autoRotate = !isAutoRotating;
+      toggleBtn.textContent = isAutoRotating ? 'Enable Auto-Rotate' : 'Disable Auto-Rotate';
+      toggleBtn.classList.toggle('btn-auto', !isAutoRotating);
+      toggleBtn.classList.toggle('btn-outline-medibook', isAutoRotating);
+    });
+    
+    // Reset view
+    document.getElementById('resetView').addEventListener('click', function() {
+      sphere.rotation = { x: 15, y: 15, z: 0 };
+      sphere.velocity = { x: 0, y: 0 };
+    });
+  });
+</script>
+{% endblock %}

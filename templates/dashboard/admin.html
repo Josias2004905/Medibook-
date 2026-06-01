@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard — MediBook{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1><i class="fas fa-chart-bar me-2"></i>Admin Dashboard</h1>
+    </div>
+</div>
+<div class="container pb-5">
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(0,102,204,0.2);color:#4DA6FF;"><i class="fas fa-users"></i></div>
+                <div class="stat-value" style="color:#4DA6FF;">{{ total_patients }}</div>
+                <div class="stat-label">Patients</div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(0,184,148,0.2);color:#00B894;"><i class="fas fa-user-md"></i></div>
+                <div class="stat-value" style="color:#00B894;">{{ total_doctors }}</div>
+                <div class="stat-label">Active Doctors</div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(108,92,231,0.2);color:#6C5CE7;"><i class="fas fa-calendar-check"></i></div>
+                <div class="stat-value" style="color:#6C5CE7;">{{ total_appointments }}</div>
+                <div class="stat-label">Appointments</div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(243,156,18,0.2);color:#F39C12;"><i class="fas fa-star"></i></div>
+                <div class="stat-value" style="color:#F39C12;">4.8</div>
+                <div class="stat-label">Avg Rating</div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card-dark p-4 mb-4">
+                <h5 style="color:#fff;font-weight:700;margin-bottom:1rem;"><i class="fas fa-chart-pie me-2 text-primary"></i>By Status</h5>
+                {% for item in appointments_by_status %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge badge-{{ item.status }}">{{ item.status|title }}</span>
+                    <span style="color:#E8F0FE;font-weight:700;">{{ item.count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="card-dark p-4">
+                <h5 style="color:#fff;font-weight:700;margin-bottom:1rem;"><i class="fas fa-trophy me-2 text-warning"></i>Top Doctors</h5>
+                {% for doctor in top_doctors %}
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#0066CC,#00B894);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:#fff;flex-shrink:0;">
+                        {{ doctor.user.first_name|first|upper }}{{ doctor.user.last_name|first|upper }}
+                    </div>
+                    <div style="flex-grow:1;">
+                        <div style="color:#E8F0FE;font-size:0.85rem;font-weight:600;">Dr. {{ doctor.user.get_full_name }}</div>
+                        <div style="color:#4DA6FF;font-size:0.75rem;">{{ doctor.specialty.name|default:"General" }}</div>
+                    </div>
+                    <span style="color:#F39C12;font-size:0.85rem;">★ {{ doctor.rating }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="card-dark p-4 mb-4">
+                <h5 style="color:#fff;font-weight:700;margin-bottom:1rem;"><i class="fas fa-stethoscope me-2 text-success"></i>Appointments by Specialty</h5>
+                {% for item in appointments_by_specialty %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span style="color:#E8F0FE;font-size:0.85rem;">{{ item.specialty__name|default:"Unknown" }}</span>
+                        <span style="color:#4DA6FF;font-size:0.85rem;">{{ item.count }}</span>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.06);border-radius:50px;height:6px;">
+                        <div style="height:100%;background:linear-gradient(90deg,#0066CC,#00B894);border-radius:50px;width:{% widthratio item.count total_appointments 100 %}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="card-dark p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 style="color:#fff;font-weight:700;margin:0;"><i class="fas fa-clock me-2 text-primary"></i>Recent Appointments</h5>
+                    <a href="{% url 'appointment_list' %}" style="color:#4DA6FF;font-size:0.85rem;">View all</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark-custom mb-0">
+                        <thead><tr><th>Patient</th><th>Doctor</th><th>Date</th><th>Status</th></tr></thead>
+                        <tbody>
+                            {% for appt in recent_appointments %}
+                            <tr>
+                                <td style="color:#E8F0FE;">{{ appt.patient.user.get_full_name }}</td>
+                                <td style="color:#4DA6FF;">Dr. {{ appt.doctor.user.get_full_name }}</td>
+                                <td style="color:rgba(232,240,254,0.6);">{{ appt.time_slot.date|date:'M j' }}</td>
+                                <td><span class="badge badge-{{ appt.status }}">{{ appt.get_status_display }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-3 mt-2">
+        <div class="col-md-3"><a href="{% url 'specialty_list' %}" class="card-dark p-3 text-center d-block text-decoration-none" style="color:#E8F0FE;"><i class="fas fa-stethoscope fa-2x mb-2" style="color:#4DA6FF;"></i><br>Specialties</a></div>
+        <div class="col-md-3"><a href="{% url 'doctor_list' %}" class="card-dark p-3 text-center d-block text-decoration-none" style="color:#E8F0FE;"><i class="fas fa-user-md fa-2x mb-2" style="color:#00B894;"></i><br>Doctors</a></div>
+        <div class="col-md-3"><a href="{% url 'appointment_list' %}" class="card-dark p-3 text-center d-block text-decoration-none" style="color:#E8F0FE;"><i class="fas fa-calendar-check fa-2x mb-2" style="color:#6C5CE7;"></i><br>Appointments</a></div>
+        <div class="col-md-3"><a href="/admin/" class="card-dark p-3 text-center d-block text-decoration-none" style="color:#E8F0FE;"><i class="fas fa-cog fa-2x mb-2" style="color:#F39C12;"></i><br>Django Admin</a></div>
+    </div>
+</div>
+{% endblock %}

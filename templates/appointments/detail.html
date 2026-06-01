@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}Appointment Detail — MediBook{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1><i class="fas fa-file-medical me-2"></i>Appointment Detail</h1>
+    </div>
+</div>
+<div class="container pb-5">
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <!-- Main Info -->
+            <div class="card-dark p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h5 style="color:#fff;font-weight:700;margin:0;">Appointment #{{ appointment.pk }}</h5>
+                    <span class="badge badge-{{ appointment.status }} px-3 py-2 rounded-pill">{{ appointment.get_status_display }}</span>
+                </div>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div style="color:rgba(232,240,254,0.5);font-size:0.78rem;text-transform:uppercase;margin-bottom:0.25rem;">Patient</div>
+                        <div style="color:#E8F0FE;font-weight:600;">{{ appointment.patient.user.get_full_name }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div style="color:rgba(232,240,254,0.5);font-size:0.78rem;text-transform:uppercase;margin-bottom:0.25rem;">Doctor</div>
+                        <div style="color:#E8F0FE;font-weight:600;">Dr. {{ appointment.doctor.user.get_full_name }}</div>
+                        <div style="color:#4DA6FF;font-size:0.85rem;">{{ appointment.specialty.name|default:"" }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div style="color:rgba(232,240,254,0.5);font-size:0.78rem;text-transform:uppercase;margin-bottom:0.25rem;">Date</div>
+                        <div style="color:#E8F0FE;font-weight:600;">{{ appointment.time_slot.date|date:'l, M j, Y' }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div style="color:rgba(232,240,254,0.5);font-size:0.78rem;text-transform:uppercase;margin-bottom:0.25rem;">Time</div>
+                        <div style="color:#E8F0FE;font-weight:600;">{{ appointment.time_slot.start_time|time:'H:i' }} – {{ appointment.time_slot.end_time|time:'H:i' }}</div>
+                    </div>
+                    <div class="col-12">
+                        <div style="color:rgba(232,240,254,0.5);font-size:0.78rem;text-transform:uppercase;margin-bottom:0.25rem;">Reason</div>
+                        <p style="color:#E8F0FE;margin:0;">{{ appointment.reason }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rejection Reason -->
+            {% if appointment.status == 'rejected' and appointment.rejection_reason %}
+            <div class="card-dark p-4 mb-4" style="border-color:rgba(231,76,60,0.3);">
+                <h5 style="color:#E74C3C;font-weight:700;margin-bottom:1rem;"><i class="fas fa-times-circle me-2"></i>Rejection Reason</h5>
+                <p style="color:#E8F0FE;">{{ appointment.rejection_reason }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Proposed Reschedule -->
+            {% if appointment.has_pending_proposal %}
+            <div class="card-dark p-4 mb-4" style="border-color:rgba(243,156,18,0.3);">
+                <h5 style="color:#F39C12;font-weight:700;margin-bottom:1rem;">
+                    <i class="fas fa-calendar-alt me-2"></i>Pending Reschedule Proposal
+                </h5>
+                <p style="color:rgba(232,240,254,0.7);">
+                    Proposed by: <strong style="color:#E8F0FE;">{{ appointment.proposed_by|title }}</strong>
+                </p>
+                <p style="color:#E8F0FE;">
+                    New date: <strong>{{ appointment.proposed_time_slot.date|date:'l, M j, Y' }}</strong><br>
+                    New time: <strong>{{ appointment.proposed_time_slot.start_time|time:'H:i' }} – {{ appointment.proposed_time_slot.end_time|time:'H:i' }}</strong>
+                </p>
+                <div class="d-flex gap-2 mt-3">
+                    {% if user.role == 'doctor' and appointment.proposed_by == 'patient' or user.role == 'patient' and appointment.proposed_by == 'doctor' %}
+                    <form method="post" action="{% url 'accept_reschedule' appointment.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn" style="background:rgba(0,184,148,0.1);border:1px solid rgba(0,184,148,0.3);color:#00B894;">
+                            <i class="fas fa-check me-2"></i>Accept
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'cancel_proposal' appointment.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn" style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);color:#E74C3C;">
+                            <i class="fas fa-times me-2"></i>Decline
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Consultation Notes -->
+            {% if appointment.consultation %}
+            <div class="card-dark p-4 mb-4" style="border-color:rgba(0,184,148,0.3);">
+                <h5 style="color:#00B894;font-weight:700;margin-bottom:1rem;"><i class="fas fa-notes-medical me-2"></i>Consultation Notes</h5>
+                <p style="color:#E8F0FE;">{{ appointment.consultation.summary }}</p>
+                {% if appointment.consultation.prescription %}
+                <div class="mt-3">
+                    <div style="color:rgba(232,240,254,0.5);font-size:0.78rem;text-transform:uppercase;margin-bottom:0.5rem;">Prescription</div>
+                    <p style="color:#E8F0FE;">{{ appointment.consultation.prescription }}</p>
+                </div>
+                {% endif %}
+                {% if appointment.consultation.follow_up_date %}
+                <div style="background:rgba(0,102,204,0.1);border-radius:10px;padding:0.75rem 1rem;margin-top:1rem;">
+                    <i class="fas fa-calendar-plus me-2 text-primary"></i>
+                    <strong style="color:#E8F0FE;">Follow-up:</strong>
+                    <span style="color:#4DA6FF;"> {{ appointment.consultation.follow_up_date|date:'M j, Y' }}</span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Review -->
+            {% if appointment.review %}
+            <div class="card-dark p-4 mb-4" style="border-color:rgba(243,156,18,0.3);">
+                <h5 style="color:#F39C12;font-weight:700;margin-bottom:1rem;"><i class="fas fa-star me-2"></i>Patient Review</h5>
+                <div style="color:#F39C12;font-size:1.2rem;margin-bottom:0.5rem;">{% for i in "12345"|slice:appointment.review.rating %}★{% endfor %}</div>
+                <p style="color:rgba(232,240,254,0.7);">{{ appointment.review.comment|default:"No comment." }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Chat Section -->
+            <div class="card-dark p-4 mb-4" style="border-color:rgba(108,92,231,0.3);">
+                <h5 style="color:#6C5CE7;font-weight:700;margin-bottom:1rem;">
+                    <i class="fas fa-comments me-2"></i>Messages
+                    <a href="{% url 'inbox' %}" style="color:#4DA6FF;font-size:0.8rem;font-weight:400;float:right;">All Conversations</a>
+                </h5>
+                <div style="max-height:300px;overflow-y:auto;margin-bottom:1rem;padding:0.5rem;background:rgba(0,0,0,0.15);border-radius:10px;">
+                    {% for msg in chat_messages %}
+                    <div class="mb-2" style="display:flex;{% if msg.sender == user %}justify-content:flex-end{% endif %};">
+                        <div style="max-width:75%;padding:0.5rem 1rem;border-radius:12px;
+                            {% if msg.sender == user %}
+                            background:rgba(0,102,204,0.25);border-bottom-right-radius:4px;
+                            {% else %}
+                            background:rgba(255,255,255,0.06);border-bottom-left-radius:4px;
+                            {% endif %}">
+                            <div style="color:#E8F0FE;font-size:0.85rem;">{{ msg.content }}</div>
+                            <div style="color:rgba(232,240,254,0.35);font-size:0.65rem;margin-top:2px;text-align:right;">
+                                {{ msg.created_at|time:'H:i' }}
+                                {% if not msg.is_read and msg.sender == user %}
+                                <i class="fas fa-check ms-1" style="color:#00B894;"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p style="color:rgba(232,240,254,0.35);text-align:center;padding:1rem;font-size:0.85rem;">
+                        No messages yet. Start the conversation!
+                    </p>
+                    {% endfor %}
+                </div>
+                <form method="post" action="{% url 'send_message' appointment.pk %}">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        {{ chat_form.content }}
+                        <button type="submit" class="btn" style="background:rgba(108,92,231,0.2);border:1px solid rgba(108,92,231,0.3);color:#6C5CE7;">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Action Panel -->
+        <div class="col-lg-4">
+            <div class="card-dark p-4">
+                <h6 style="color:rgba(232,240,254,0.6);text-transform:uppercase;font-size:0.78rem;margin-bottom:1rem;">Actions</h6>
+
+                {% if user.role == 'patient' and appointment.can_be_cancelled_by_patient %}
+                <form method="post" action="{% url 'cancel_appointment' appointment.pk %}" class="mb-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn w-100" style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);color:#E74C3C;"
+                            onclick="return confirm('Cancel this appointment?')">
+                        <i class="fas fa-times-circle me-2"></i>Cancel Appointment
+                    </button>
+                </form>
+                {% endif %}
+
+                <!-- Doctor Actions for Pending -->
+                {% if user.role == 'doctor' and appointment.status == 'pending' %}
+                <form method="post" action="{% url 'confirm_appointment' appointment.pk %}" class="mb-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn w-100" style="background:rgba(0,184,148,0.1);border:1px solid rgba(0,184,148,0.3);color:#00B894;">
+                        <i class="fas fa-check me-2"></i>Accept Appointment
+                    </button>
+                </form>
+                <div style="background:rgba(231,76,60,0.05);border:1px solid rgba(231,76,60,0.15);border-radius:12px;padding:1rem;margin-top:0.5rem;">
+                    <p style="color:rgba(232,240,254,0.6);font-size:0.85rem;margin-bottom:0.75rem;">Reject with reason:</p>
+                    <form method="post" action="{% url 'reject_appointment' appointment.pk %}">
+                        {% csrf_token %}
+                        {{ rejection_form|crispy }}
+                        <button type="submit" class="btn w-100 mt-2" style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);color:#E74C3C;">
+                            <i class="fas fa-times-circle me-2"></i>Reject Request
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
+                <!-- Reschedule Proposal (for either party) -->
+                {% if appointment.status == 'pending' or appointment.status == 'confirmed' %}
+                <div style="background:rgba(243,156,18,0.05);border:1px solid rgba(243,156,18,0.15);border-radius:12px;padding:1rem;margin-top:0.5rem;">
+                    <p style="color:rgba(232,240,254,0.6);font-size:0.85rem;margin-bottom:0.75rem;">
+                        <i class="fas fa-calendar-alt me-1"></i> Propose a different time:
+                    </p>
+                    <form method="post" action="{% url 'propose_reschedule' appointment.pk %}">
+                        {% csrf_token %}
+                        {{ reschedule_form|crispy }}
+                        <button type="submit" class="btn w-100 mt-2" style="background:rgba(243,156,18,0.1);border:1px solid rgba(243,156,18,0.3);color:#F39C12;">
+                            <i class="fas fa-clock me-2"></i>Propose New Time
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
+                {% if user.role == 'doctor' and appointment.status == 'pending' or user.role == 'doctor' and appointment.status == 'confirmed' %}
+                <form method="post" action="{% url 'doctor_cancel_appointment' appointment.pk %}" class="mb-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn w-100" style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);color:#E74C3C;"
+                            onclick="return confirm('Cancel this appointment?')">
+                        <i class="fas fa-times-circle me-2"></i>Cancel Appointment
+                    </button>
+                </form>
+                {% endif %}
+
+                {% if user.role == 'doctor' and appointment.status == 'confirmed' and not appointment.consultation %}
+                <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-subtle);border-radius:12px;padding:1rem;margin-top:0.5rem;">
+                    <p style="color:rgba(232,240,254,0.6);font-size:0.85rem;margin-bottom:0.75rem;">Mark appointment as completed and add consultation notes:</p>
+                    <form method="post" action="{% url 'complete_appointment' appointment.pk %}">
+                        {% csrf_token %}
+                        {{ consultation_form|crispy }}
+                        <button type="submit" class="btn btn-primary w-100 mt-3 py-2">
+                            <i class="fas fa-check-double me-2"></i>Complete & Save Notes
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
+                {% if can_review %}
+                <div style="background:rgba(243,156,18,0.05);border:1px solid rgba(243,156,18,0.2);border-radius:12px;padding:1rem;margin-top:0.5rem;">
+                    <p style="color:rgba(232,240,254,0.7);font-size:0.85rem;margin-bottom:0.75rem;">Share your experience:</p>
+                    <form method="post" action="{% url 'create_review' appointment.pk %}">
+                        {% csrf_token %}
+                        {{ review_form|crispy }}
+                        <button type="submit" class="btn btn-warning w-100 mt-3 py-2">
+                            <i class="fas fa-star me-2"></i>Submit Review
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
+                <a href="{% url 'appointment_list' %}" class="btn btn-outline-medibook w-100 mt-2">
+                    <i class="fas fa-arrow-left me-1"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

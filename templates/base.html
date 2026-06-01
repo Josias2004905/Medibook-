@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MediBook — Healthcare, Elevated. Find premium doctors, book appointments, and manage your health with our AI-powered platform.">
+    <title>{% block title %}MediBook — Healthcare, Elevated{% endblock %}</title>
+
+    <!-- Bootstrap 5 Grid/Utils -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome 6 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <!-- Premium Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- MediBook Design System -->
+    {% load static %}
+    <link href="{% static 'css/medibook.css' %}" rel="stylesheet">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ── Premium Navbar ── -->
+<nav class="navbar navbar-medibook navbar-expand-lg">
+    <div class="container">
+        <a class="navbar-brand-logo" href="{% url 'index' %}">
+            <span class="navbar-brand-icon"><i class="fa-solid fa-plus"></i></span>
+            MediBook
+        </a>
+
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+            <i class="fas fa-bars" style="color:var(--text-primary);"></i>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarMain">
+            <ul class="navbar-nav me-auto ms-4">
+                {% if not user.is_authenticated or user.role != 'doctor' %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'doctor_list' %}">
+                        <i class="fa-solid fa-user-doctor me-1"></i> Doctors
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'ai_orientation' %}">
+                        <i class="fa-solid fa-brain me-1"></i> AI Advisor
+                    </a>
+                </li>
+                {% endif %}
+                {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'appointment_list' %}">
+                        <i class="fa-solid fa-calendar-check me-1"></i> Appointments
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'inbox' %}">
+                        <i class="fa-solid fa-comments me-1"></i> Messages
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+
+            <div class="d-flex align-items-center gap-3">
+                {% if user.is_authenticated %}
+                <!-- Notification Bell -->
+                <a href="{% url 'notification_list' %}" class="notif-bell text-decoration-none position-relative">
+                    <i class="fa-solid fa-bell"></i>
+                    {% if unread_notifications_count > 0 %}
+                    <span class="notif-badge">{{ unread_notifications_count }}</span>
+                    {% endif %}
+                </a>
+
+                <!-- User Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-sm d-flex align-items-center gap-2 dropdown-toggle"
+                            style="background:var(--bg-surface); border: 1px solid var(--border-subtle); color:var(--text-primary); border-radius:var(--radius-md); padding:6px 14px;"
+                            data-bs-toggle="dropdown">
+                        {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" width="28" height="28" class="rounded-circle object-fit-cover" style="border:2px solid var(--border-accent);">
+                        {% else %}
+                        <div style="width:28px;height:28px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:var(--bg-void);">
+                            {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                        </div>
+                        {% endif %}
+                        <span style="font-size:0.85rem;">{{ user.first_name|default:user.username }}</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{% url 'dashboard' %}"><i class="fa-solid fa-gauge me-2" style="color:var(--primary);"></i>Dashboard</a></li>
+                        <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="fa-solid fa-user me-2" style="color:var(--primary);"></i>Profile</a></li>
+                        {% if user.role == 'doctor' %}
+                        <li><a class="dropdown-item" href="{% url 'availability_list' %}"><i class="fa-solid fa-clock me-2" style="color:var(--success);"></i>Availability</a></li>
+                        {% endif %}
+                        {% if user.role == 'admin' or user.is_staff %}
+                        <li><a class="dropdown-item" href="{% url 'admin_dashboard' %}"><i class="fa-solid fa-gear me-2" style="color:var(--warning);"></i>Admin Panel</a></li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="post" action="{% url 'logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item" style="color:var(--danger) !important;">
+                                    <i class="fa-solid fa-right-from-bracket me-2"></i>Logout
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+                {% else %}
+                <a href="{% url 'login' %}" class="nav-link" style="color:var(--text-secondary) !important; font-size:0.875rem; font-weight:500;">Login</a>
+                <a href="{% url 'register' %}" class="btn-nav-primary">Get Started</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- ── Flash Messages ── -->
+{% if messages %}
+<div class="container mt-3" style="position:relative;z-index:1;">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-{% if message.tags == 'success' %}circle-check{% elif message.tags == 'danger' %}circle-exclamation{% elif message.tags == 'warning' %}triangle-exclamation{% else %}circle-info{% endif %} me-2"></i>
+        {{ message }}
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- ── Main Content ── -->
+<main>
+    {% block content %}{% endblock %}
+</main>
+
+<!-- ── Premium Footer ── -->
+<footer class="footer-medibook">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <a class="navbar-brand-logo" href="{% url 'index' %}" style="font-size:1rem !important;">
+                    <span class="navbar-brand-icon" style="width:24px;height:24px;font-size:0.7rem;border-radius:6px;"><i class="fa-solid fa-plus"></i></span>
+                    MediBook
+                </a>
+                <span style="color:var(--text-muted);font-size:0.78rem;">Healthcare, Elevated.</span>
+            </div>
+            <div class="d-flex align-items-center gap-4" style="font-size:0.78rem;">
+                {% if not user.is_authenticated or user.role != 'doctor' %}
+                <a href="{% url 'doctor_list' %}">Doctors</a>
+                <a href="{% url 'ai_orientation' %}">AI Advisor</a>
+                {% endif %}
+                <a href="{% url 'register' %}">Register</a>
+                {% if user.is_authenticated %}
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                {% endif %}
+            </div>
+            <div style="color:var(--text-muted);font-size:0.75rem;">
+                &copy; {% now "Y" %} MediBook. All rights reserved.
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Inline Particle Background -->
+<canvas id="particles-canvas" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;"></canvas>
+<script>
+  (function() {
+    const canvas = document.getElementById('particles-canvas');
+    const ctx = canvas.getContext('2d');
+    let w, h, particles = [];
+    let excludeRects = [];
+
+    function updateExcludeRects() {
+      excludeRects = [];
+      document.querySelectorAll('[data-no-particles]').forEach(el => {
+        const r = el.getBoundingClientRect();
+        excludeRects.push(r);
+      });
+    }
+
+    function isExcluded(x, y) {
+      for (const r of excludeRects) {
+        if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return true;
+      }
+      return false;
+    }
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+      updateExcludeRects();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    const COUNT = 160;
+    for (let i = 0; i < COUNT; i++) {
+      let x, y;
+      do {
+        x = Math.random() * w;
+        y = Math.random() * h;
+      } while (isExcluded(x, y));
+      particles.push({
+        x, y,
+        r: Math.random() * 2.5 + 0.5,
+        dx: (Math.random() - 0.5) * 0.5,
+        dy: (Math.random() - 0.5) * 0.5,
+        o: Math.random() * 0.55 + 0.1,
+        phase: Math.random() * Math.PI * 2,
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+      updateExcludeRects();
+      for (const p of particles) {
+        p.x += p.dx;
+        p.y += p.dy;
+        if (p.x < 0) p.x = w;
+        if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h;
+        if (p.y > h) p.y = 0;
+        if (isExcluded(p.x, p.y)) continue;
+        const flicker = 0.5 + 0.5 * Math.sin(Date.now() * 0.003 + p.phase);
+        ctx.globalAlpha = p.o * flicker;
+        ctx.fillStyle = '#00E676';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(draw);
+    }
+    draw();
+  })();
+</script>
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- MediBook Premium JS -->
+<script src="{% static 'js/main.js' %}"></script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

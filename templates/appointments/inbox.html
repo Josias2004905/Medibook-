@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Inbox — MediBook{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1><i class="fas fa-inbox me-2"></i>Inbox</h1>
+        <p style="color:rgba(232,240,254,0.6);margin:0;">Your conversations</p>
+    </div>
+</div>
+<div class="container pb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            {% if conversations %}
+            <div class="card-dark overflow-hidden">
+                {% for conv in conversations %}
+                <a href="{% url 'conversation' conv.other_user.id %}" class="text-decoration-none">
+                    <div class="d-flex align-items-center gap-3 p-3" style="border-bottom:1px solid rgba(255,255,255,0.05);transition:background 0.2s;"
+                         onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+                        <div style="width:50px;height:50px;border-radius:50%;background:rgba(0,102,204,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <span style="color:#4DA6FF;font-weight:700;font-size:1.1rem;">
+                                {{ conv.other_user.first_name|first|upper }}{{ conv.other_user.last_name|first|upper }}
+                            </span>
+                        </div>
+                        <div style="flex-grow:1;min-width:0;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="color:#E8F0FE;font-weight:600;">
+                                    {% if conv.other_user.role == 'doctor' %}Dr. {% endif %}{{ conv.other_user.get_full_name }}
+                                </span>
+                                {% if conv.unread_count > 0 %}
+                                <span class="badge" style="background:#E74C3C;">{{ conv.unread_count }}</span>
+                                {% endif %}
+                            </div>
+                            {% if conv.last_message %}
+                            <div style="color:rgba(232,240,254,0.45);font-size:0.82rem;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                {{ conv.last_message.content|truncatechars:60 }}
+                                <span style="color:rgba(232,240,254,0.25);font-size:0.7rem;margin-left:0.5rem;">
+                                    {{ conv.last_message.created_at|timesince }} ago
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <i class="fas fa-chevron-right" style="color:rgba(232,240,254,0.2);"></i>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="card-dark p-5 text-center">
+                <i class="fas fa-comment-slash fa-3x mb-3" style="color:rgba(232,240,254,0.15);"></i>
+                <p style="color:rgba(232,240,254,0.4);font-size:1rem;">No conversations yet.</p>
+                <p style="color:rgba(232,240,254,0.25);font-size:0.85rem;">Messages will appear here when you chat with a doctor or patient.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

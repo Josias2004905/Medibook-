@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Notifications — MediBook{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container d-flex justify-content-between align-items-center">
+        <h1><i class="fas fa-bell me-2"></i>Notifications</h1>
+        <form method="post" action="{% url 'mark_all_read' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-medibook btn-sm">
+                <i class="fas fa-check-double me-1"></i>Mark All Read
+            </button>
+        </form>
+    </div>
+</div>
+<div class="container pb-5" style="max-width:760px;">
+    {% for notif in notifications %}
+    <{% if notif.link %}a href="{{ notif.link }}" style="text-decoration:none;display:block;"{% else %}div{% endif %}
+       class="card-dark p-4 mb-3 d-flex gap-3 align-items-start {% if not notif.is_read %}unread-notif{% endif %}"
+       style="{% if not notif.is_read %}border-color:rgba(0,102,204,0.4);{% endif %} transition:border-color 0.2s;"
+       onmouseover="this.style.borderColor='rgba(0,102,204,0.6)'" onmouseout="this.style.borderColor='{% if not notif.is_read %}rgba(0,102,204,0.4){% else %}var(--border-subtle){% endif %}'">
+        <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+            background:{% if notif.notification_type == 'appointment' %}rgba(0,102,204,0.2){% elif notif.notification_type == 'reminder' %}rgba(243,156,18,0.2){% else %}rgba(108,92,231,0.2){% endif %};">
+            <i class="fas {% if notif.notification_type == 'appointment' %}fa-calendar-check{% elif notif.notification_type == 'reminder' %}fa-clock{% else %}fa-info-circle{% endif %}"
+               style="color:{% if notif.notification_type == 'appointment' %}#4DA6FF{% elif notif.notification_type == 'reminder' %}#F39C12{% else %}#6C5CE7{% endif %};"></i>
+        </div>
+        <div class="flex-grow-1">
+            <div class="d-flex justify-content-between align-items-start">
+                <strong style="color:#E8F0FE;">{{ notif.title }}</strong>
+                {% if not notif.is_read %}
+                <span style="width:8px;height:8px;border-radius:50%;background:#0066CC;display:inline-block;flex-shrink:0;margin-top:6px;"></span>
+                {% endif %}
+            </div>
+            <p style="color:rgba(232,240,254,0.7);font-size:0.875rem;margin:0.25rem 0 0.5rem;">{{ notif.message }}</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <small style="color:rgba(232,240,254,0.35);">{{ notif.created_at|timesince }} ago</small>
+                {% if not notif.is_read %}
+                <form method="post" action="{% url 'mark_notification_read' notif.pk %}" onclick="event.stopPropagation();">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm" style="color:#4DA6FF;background:transparent;border:none;font-size:0.78rem;padding:0;">Mark read</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </{% if notif.link %}a{% else %}div{% endif %}>
+    {% empty %}
+    <div class="text-center py-5">
+        <i class="fas fa-bell-slash fa-3x mb-3" style="color:rgba(232,240,254,0.2);"></i>
+        <p style="color:rgba(232,240,254,0.5);">You have no notifications.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

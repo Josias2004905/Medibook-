@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Profile — MediBook{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1><i class="fas fa-user-circle me-2"></i>My Profile</h1>
+    </div>
+</div>
+<div class="container pb-5">
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card-dark p-4 text-center">
+                {% if user.profile_picture %}
+                <img src="{{ user.profile_picture.url }}" width="110" height="110" class="rounded-circle object-fit-cover mb-3" style="border:3px solid rgba(0,102,204,0.5);">
+                {% else %}
+                <div style="width:110px;height:110px;border-radius:50%;background:linear-gradient(135deg,#0066CC,#00B894);display:flex;align-items:center;justify-content:center;font-size:2.5rem;font-weight:700;color:#fff;margin:0 auto 1rem;">
+                    {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                </div>
+                {% endif %}
+                <h5 style="color:#fff;font-weight:700;">{{ user.get_full_name|default:user.username }}</h5>
+                <span class="badge" style="background:rgba(0,102,204,0.2);color:#4DA6FF;border:1px solid rgba(0,102,204,0.3);">
+                    {{ user.role|title }}
+                </span>
+                <p class="mt-3" style="color:rgba(232,240,254,0.6);font-size:0.875rem;">
+                    <i class="fas fa-envelope me-1"></i> {{ user.email }}<br>
+                    {% if user.phone %}<i class="fas fa-phone me-1 mt-1"></i> {{ user.phone }}{% endif %}
+                </p>
+                {% if user.role == 'patient' %}
+                <a href="{% url 'patient_profile_edit' %}" class="btn btn-outline-medibook w-100 mt-2">
+                    <i class="fas fa-heartbeat me-1"></i> Medical Info
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card-dark p-4">
+                <h5 style="color:#fff;font-weight:700;margin-bottom:1.5rem;">
+                    <i class="fas fa-edit me-2 text-primary"></i>Edit Account Info
+                </h5>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {% load crispy_forms_tags %}
+                    {{ form|crispy }}
+                    <button type="submit" class="btn btn-primary mt-4 px-4 py-2.5">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

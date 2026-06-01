@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% block title %}Doctor Dashboard — MediBook{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1><i class="fas fa-stethoscope me-2"></i>Doctor Dashboard</h1>
+        <p style="color:rgba(232,240,254,0.6);margin:0;">Dr. {{ user.get_full_name }}</p>
+    </div>
+</div>
+<div class="container pb-5">
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        {% for val, label, color, icon in stats %}{% empty %}
+        <div class="col-6 col-md-3">
+            <a href="{% url 'appointment_list' %}" class="stat-card-link">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:rgba(0,102,204,0.2);color:#4DA6FF;"><i class="fas fa-calendar-check"></i></div>
+                    <div class="stat-value" style="color:#4DA6FF;">{{ total }}</div>
+                    <div class="stat-label">Total</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'appointment_list' %}?status=confirmed" class="stat-card-link">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:rgba(0,184,148,0.2);color:#00B894;"><i class="fas fa-check"></i></div>
+                    <div class="stat-value" style="color:#00B894;">{{ confirmed }}</div>
+                    <div class="stat-label">Confirmed</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'appointment_list' %}?status=completed" class="stat-card-link">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:rgba(108,92,231,0.2);color:#6C5CE7;"><i class="fas fa-flag-checkered"></i></div>
+                    <div class="stat-value" style="color:#6C5CE7;">{{ completed }}</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'appointment_list' %}?status=pending" class="stat-card-link">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:rgba(243,156,18,0.2);color:#F39C12;"><i class="fas fa-hourglass-half"></i></div>
+                    <div class="stat-value" style="color:#F39C12;">{{ pending }}</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% for leave in active_leaves %}
+    {% if leave.start_date <= today and leave.end_date >= today %}
+    <div style="background:rgba(255,184,48,0.12);border:1px solid rgba(255,184,48,0.3);border-radius:12px;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:12px;">
+        <i class="fas fa-plane fa-lg" style="color:#FFB830;"></i>
+        <div style="flex-grow:1;">
+            <div style="color:#FFB830;font-weight:600;font-size:0.9rem;">You are on leave today</div>
+            {% if leave.reason %}<div style="color:rgba(232,240,254,0.5);font-size:0.8rem;">{{ leave.reason }}</div>{% endif %}
+        </div>
+        <div style="color:rgba(232,240,254,0.4);font-size:0.78rem;">{{ leave.start_date|date:'M j' }} — {{ leave.end_date|date:'M j' }}</div>
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    <div class="row g-4">
+        <!-- Today's Appointments -->
+        <div class="col-lg-8">
+            <div class="card-dark p-4 mb-4">
+                <h5 style="color:#fff;font-weight:700;margin-bottom:1rem;"><i class="fas fa-sun me-2 text-warning"></i>Today's Schedule</h5>
+                {% if today_appointments %}
+                <div class="table-responsive">
+                    <table class="table table-dark-custom mb-0">
+                        <thead><tr><th>Time</th><th>Patient</th><th>Reason</th><th>Status</th><th></th></tr></thead>
+                        <tbody>
+                            {% for appt in today_appointments %}
+                            <tr>
+                                <td style="color:#4DA6FF;font-weight:600;">{{ appt.time_slot.start_time|time:'H:i' }}</td>
+                                <td style="color:#E8F0FE;">{{ appt.patient.user.get_full_name }}</td>
+                                <td style="color:rgba(232,240,254,0.6);font-size:0.85rem;">{{ appt.reason|truncatechars:40 }}</td>
+                                <td><span class="badge badge-{{ appt.status }}">{{ appt.get_status_display }}</span></td>
+                                <td><a href="{% url 'appointment_detail' appt.pk %}" class="btn btn-sm btn-outline-medibook">Open</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4" style="color:rgba(232,240,254,0.4);">
+                    <i class="fas fa-coffee fa-2x mb-2"></i>
+                    <p>No appointments scheduled for today.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Pending Requests -->
+            <div class="card-dark p-4 mb-4" style="border-color:rgba(243,156,18,0.2);">
+                <h5 style="color:#F39C12;font-weight:700;margin-bottom:1rem;">
+                    <i class="fas fa-clock me-2"></i>Pending Requests
+                    {% if pending_requests %}<span class="badge" style="background:#E74C3C;margin-left:0.5rem;">{{ pending_requests|length }}</span>{% endif %}
+                </h5>
+                {% for appt in pending_requests %}
+                <div class="d-flex align-items-center gap-3 py-3" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <div style="flex-grow:1;">
+                        <div style="color:#E8F0FE;font-weight:600;">{{ appt.patient.user.get_full_name }}</div>
+                        <div style="color:rgba(232,240,254,0.5);font-size:0.82rem;">
+                            {{ appt.specialty.name|default:"General" }} · {{ appt.time_slot.date|date:'M j, Y' }} at {{ appt.time_slot.start_time|time:'H:i' }}
+                        </div>
+                        <div style="color:rgba(232,240,254,0.35);font-size:0.78rem;margin-top:2px;">{{ appt.reason|truncatechars:60 }}</div>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <form method="post" action="{% url 'confirm_appointment' appt.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm" style="background:rgba(0,184,148,0.15);border:1px solid rgba(0,184,148,0.3);color:#00B894;padding:4px 10px;font-size:0.75rem;"
+                                    title="Accept">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </form>
+                        <a href="{% url 'appointment_detail' appt.pk %}" class="btn btn-sm btn-outline-medibook" style="padding:4px 10px;font-size:0.75rem;" title="Review & Manage">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color:rgba(232,240,254,0.4);text-align:center;padding:0.5rem;font-size:0.85rem;">No pending requests.</p>
+                {% endfor %}
+            </div>
+
+            <!-- Upcoming -->
+            <div class="card-dark p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 style="color:#fff;font-weight:700;margin:0;"><i class="fas fa-calendar-week me-2 text-primary"></i>Upcoming</h5>
+                    <a href="{% url 'appointment_list' %}" style="color:#4DA6FF;font-size:0.85rem;">View all</a>
+                </div>
+                {% for appt in upcoming %}
+                <div class="d-flex align-items-center gap-3 py-2" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <div style="flex-grow:1;">
+                        <div style="color:#E8F0FE;font-weight:500;">{{ appt.patient.user.get_full_name }}</div>
+                        <div style="color:rgba(232,240,254,0.45);font-size:0.8rem;">{{ appt.time_slot.date|date:'M j, Y' }} at {{ appt.time_slot.start_time|time:'H:i' }}</div>
+                    </div>
+                    <a href="{% url 'appointment_detail' appt.pk %}" class="btn btn-sm btn-outline-medibook">View</a>
+                </div>
+                {% empty %}
+                <p style="color:rgba(232,240,254,0.4);text-align:center;padding:1rem;">No upcoming appointments.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card-dark p-4 mb-4">
+                <h5 style="color:#fff;font-weight:700;margin-bottom:1rem;"><i class="fas fa-tools me-2 text-warning"></i>Quick Actions</h5>
+                <a href="{% url 'availability_list' %}" class="btn btn-medibook-primary w-100 mb-2"><i class="fas fa-clock me-2"></i>Manage Schedule</a>
+                <a href="{% url 'leave_create' %}" class="btn btn-outline-medibook w-100 mb-2"><i class="fas fa-plane me-2"></i>Add Leave</a>
+                <a href="{% url 'doctor_profile_edit' %}" class="btn btn-outline-medibook w-100 mb-2"><i class="fas fa-user-edit me-2"></i>Edit Profile</a>
+                <a href="{% url 'inbox' %}" class="btn btn-outline-medibook w-100"><i class="fas fa-comments me-2"></i>Messages</a>
+            </div>
+            {% if active_leaves %}
+            <div class="card-dark p-4 mb-4" style="border-color:rgba(255,184,48,0.25);">
+                <h5 style="color:#FFB830;font-weight:700;margin-bottom:1rem;"><i class="fas fa-plane me-2"></i>Upcoming Leave</h5>
+                {% for leave in active_leaves %}
+                <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <div>
+                        <div style="color:#E8F0FE;font-size:0.85rem;">{{ leave.start_date|date:'M j' }} — {{ leave.end_date|date:'M j, Y' }}</div>
+                        {% if leave.reason %}<div style="color:rgba(232,240,254,0.4);font-size:0.75rem;">{{ leave.reason }}</div>{% endif %}
+                    </div>
+                    <a href="{% url 'leave_delete' leave.pk %}" class="btn btn-sm" style="background:rgba(231,76,60,0.15);border:1px solid rgba(231,76,60,0.3);color:#E74C3C;padding:2px 8px;font-size:0.7rem;">Remove</a>
+                </div>
+                {% endfor %}
+                <a href="{% url 'leave_list' %}" style="color:#4DA6FF;font-size:0.82rem;display:block;margin-top:8px;">Manage leaves →</a>
+            </div>
+            {% endif %}
+            <div class="card-dark p-4">
+                <h5 style="color:#fff;font-weight:700;margin-bottom:1rem;"><i class="fas fa-bell me-2 text-warning"></i>Notifications</h5>
+                {% for notif in notifications %}
+                {% if notif.link %}
+                    <a href="{{ notif.link }}" style="text-decoration:none;display:block;">
+                        <div class="mb-2 p-2" style="background:rgba(255,255,255,0.03);border-radius:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+                            <div style="font-weight:600;color:#E8F0FE;font-size:0.85rem;">{{ notif.title }}</div>
+                            <div style="color:rgba(232,240,254,0.5);font-size:0.78rem;">{{ notif.message|truncatechars:60 }}</div>
+                        </div>
+                    </a>
+                {% else %}
+                <div style="mb-2 p-2;color:red;">Notification rendering error.</div>
+                {% endif %}
+                {% empty %}
+                <p style="color:rgba(232,240,254,0.4);font-size:0.85rem;text-align:center;">No new notifications.</p>
+                {% endfor %}
+                <a href="{% url 'notification_list' %}" style="color:#4DA6FF;font-size:0.82rem;">View all</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

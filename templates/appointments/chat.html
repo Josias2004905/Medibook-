@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}Chat — MediBook{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1><i class="fas fa-comments me-2"></i>Chat</h1>
+        <p style="color:rgba(232,240,254,0.6);margin:0;">
+            {% if other_user.role == 'doctor' %}Dr. {% endif %}{{ other_user.get_full_name }}
+            {% if other_user.role == 'doctor' %} (Doctor){% else %} (Patient){% endif %}
+        </p>
+    </div>
+</div>
+<div class="container pb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card-dark p-4">
+                <div style="max-height:400px;overflow-y:auto;margin-bottom:1rem;padding:0.5rem;background:rgba(0,0,0,0.15);border-radius:12px;min-height:300px;">
+                    {% for msg in chat_messages %}
+                    <div class="mb-3" style="display:flex;{% if msg.sender == user %}justify-content:flex-end{% endif %};">
+                        <div style="max-width:75%;padding:0.6rem 1rem;border-radius:14px;
+                            {% if msg.sender == user %}
+                            background:rgba(0,102,204,0.25);border-bottom-right-radius:4px;
+                            {% else %}
+                            background:rgba(255,255,255,0.06);border-bottom-left-radius:4px;
+                            {% endif %}">
+                            <div style="color:#E8F0FE;font-size:0.9rem;">{{ msg.content }}</div>
+                            <div style="color:rgba(232,240,254,0.3);font-size:0.65rem;margin-top:4px;text-align:right;">
+                                {{ msg.created_at|date:'M j, H:i' }}
+                                {% if msg.is_read and msg.sender == user %}
+                                <i class="fas fa-check-double ms-1" style="color:#4DA6FF;"></i>
+                                {% elif msg.sender == user %}
+                                <i class="fas fa-check ms-1" style="color:#00B894;"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div style="text-align:center;padding:3rem 1rem;color:rgba(232,240,254,0.3);">
+                        <i class="fas fa-comment-dots fa-3x mb-3"></i>
+                        <p>No messages yet. Start the conversation!</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                <form method="post" action="{% url 'conversation' other_user.id %}">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        {{ chat_form.content }}
+                        <button type="submit" class="btn" style="background:rgba(108,92,231,0.2);border:1px solid rgba(108,92,231,0.3);color:#6C5CE7;border-radius:0 10px 10px 0;padding:0 1.5rem;">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+                <a href="{% url 'inbox' %}" class="btn btn-outline-medibook w-100 mt-3">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Inbox
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

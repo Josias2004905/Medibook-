@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}AI Symptom Orientation — MediBook{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1><i class="fas fa-brain me-2"></i>AI Specialty Orientation</h1>
+        <p style="color:rgba(232,240,254,0.6);margin:0;">Describe your symptoms and our AI will suggest the right specialist</p>
+    </div>
+</div>
+<div class="container pb-5" style="max-width:860px;">
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card-dark p-4">
+                <h5 style="color:#fff;font-weight:700;margin-bottom:1.25rem;">
+                    <i class="fas fa-comment-medical me-2" style="color:#6C5CE7;"></i>Describe Your Symptoms
+                </h5>
+                <textarea id="symptoms" rows="6" class="form-control mb-3"
+                    placeholder="Example: I have chest pain, shortness of breath, and heart palpitations...&#10;&#10;Describe your symptoms as clearly as possible for best results."></textarea>
+                <button id="analyzeBtn" onclick="getSuggestions()" class="btn btn-medibook-primary w-100 py-3" style="font-size:1rem;font-weight:700;">
+                    <i class="fas fa-search-plus me-2"></i>Analyze Symptoms
+                </button>
+                <p class="mt-3" style="color:rgba(232,240,254,0.4);font-size:0.8rem;text-align:center;">
+                    <i class="fas fa-info-circle me-1"></i>This tool is for guidance only — always consult a healthcare professional.
+                </p>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <!-- Loading State -->
+            <div id="loadingState" style="display:none;text-align:center;padding:3rem 0;">
+                <div class="spinner-border" style="color:#0066CC;" role="status"></div>
+                <p class="mt-3" style="color:rgba(232,240,254,0.6);">Analyzing your symptoms...</p>
+            </div>
+
+            <!-- Results -->
+            <div id="suggestions"></div>
+
+            <!-- How it works -->
+            <div class="card-dark p-4 mt-3" id="howItWorks">
+                <h6 style="color:#fff;font-weight:700;margin-bottom:1rem;"><i class="fas fa-cog me-2 text-primary"></i>How it works</h6>
+                <div class="d-flex gap-2 mb-2">
+                    <div style="width:28px;height:28px;border-radius:50%;background:rgba(0,102,204,0.2);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:#4DA6FF;flex-shrink:0;">1</div>
+                    <p style="color:rgba(232,240,254,0.6);font-size:0.85rem;margin:0;">Describe your symptoms in natural language</p>
+                </div>
+                <div class="d-flex gap-2 mb-2">
+                    <div style="width:28px;height:28px;border-radius:50%;background:rgba(0,184,148,0.2);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:#00B894;flex-shrink:0;">2</div>
+                    <p style="color:rgba(232,240,254,0.6);font-size:0.85rem;margin:0;">Our TF-IDF AI engine matches your text to medical specialties</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <div style="width:28px;height:28px;border-radius:50%;background:rgba(108,92,231,0.2);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:#6C5CE7;flex-shrink:0;">3</div>
+                    <p style="color:rgba(232,240,254,0.6);font-size:0.85rem;margin:0;">Browse doctors in the suggested specialty and book instantly</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getSuggestions() {
+    const text = document.getElementById('symptoms').value.trim();
+    if (!text) {
+        document.getElementById('suggestions').innerHTML =
+            '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i>Please describe your symptoms first.</div>';
+        return;
+    }
+    document.getElementById('loadingState').style.display = 'block';
+    document.getElementById('suggestions').innerHTML = '';
+    document.getElementById('howItWorks').style.display = 'none';
+    document.getElementById('analyzeBtn').disabled = true;
+
+    fetch('{% url "ai_suggest" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'symptoms=' + encodeURIComponent(text)
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('analyzeBtn').disabled = false;
+        if (data.error) {
+            document.getElementById('suggestions').innerHTML =
+                `<div class="alert alert-danger">${data.error}</div>`;
+            return;
+        }
+        const colors = ['#0066CC','#00B894','#6C5CE7'];
+        const bgColors = ['rgba(0,102,204,0.1)','rgba(0,184,148,0.1)','rgba(108,92,231,0.1)'];
+        const borderColors = ['rgba(0,102,204,0.3)','rgba(0,184,148,0.3)','rgba(108,92,231,0.3)'];
+        let html = '<h5 style="color:#fff;font-weight:700;margin-bottom:1rem;"><i class="fas fa-lightbulb me-2" style="color:#F39C12;"></i>Suggested Specialties</h5>';
+        data.suggestions.forEach((s, i) => {
+            const rank = i === 0 ? '🏆 Best Match' : `#${i+1} Match`;
+            html += `
+            <div class="mb-3 p-3 fade-in-up" style="background:${bgColors[i]};border:1px solid ${borderColors[i]};border-radius:14px;animation-delay:${i*0.1}s;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <span style="font-size:0.75rem;color:${colors[i]};font-weight:600;">${rank}</span>
+                        <h6 style="color:#fff;font-weight:700;margin:0.25rem 0 0;">${s.specialty}</h6>
+                    </div>
+                    <span style="background:${bgColors[i]};border:1px solid ${borderColors[i]};color:${colors[i]};border-radius:50px;padding:0.2rem 0.75rem;font-weight:700;font-size:0.85rem;">${s.confidence}%</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.06);border-radius:50px;height:6px;margin-bottom:0.75rem;">
+                    <div style="height:100%;background:${colors[i]};border-radius:50px;width:${s.confidence}%;transition:width 0.8s ease;"></div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span style="color:rgba(232,240,254,0.5);font-size:0.8rem;"><i class="fas fa-user-md me-1"></i>${s.doctor_count} doctor(s) available</span>
+                    ${s.specialty_id ? `<a href="/doctors/?specialty=${s.specialty_id}" class="btn btn-sm" style="background:${bgColors[i]};border:1px solid ${borderColors[i]};color:${colors[i]};border-radius:8px;font-size:0.8rem;font-weight:600;">Find Doctors →</a>` : ''}
+                </div>
+            </div>`;
+        });
+        document.getElementById('suggestions').innerHTML = html;
+    })
+    .catch(() => {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('analyzeBtn').disabled = false;
+        document.getElementById('suggestions').innerHTML =
+            '<div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>An error occurred. Please try again.</div>';
+    });
+}
+
+document.getElementById('symptoms').addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'Enter') getSuggestions();
+});
+</script>
+{% endblock %}

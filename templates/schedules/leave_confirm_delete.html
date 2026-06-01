@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Confirm Delete — MediBook{% endblock %}
+{% block content %}
+<div class="container py-5" style="max-width:480px;">
+    <div class="card-dark p-4 text-center">
+        <i class="fas fa-trash-alt fa-3x mb-3" style="color:#E74C3C;"></i>
+        <h5 style="color:#fff;">Delete Leave Period?</h5>
+        <p style="color:rgba(232,240,254,0.6);">{{ object.start_date|date:'M j, Y' }} — {{ object.end_date|date:'M j, Y' }}</p>
+        <form method="post" class="d-flex gap-2 justify-content-center mt-3">
+            {% csrf_token %}
+            <button type="submit" class="btn" style="background:rgba(231,76,60,0.2);border:1px solid rgba(231,76,60,0.4);color:#E74C3C;">Yes, Delete</button>
+            <a href="{% url 'leave_list' %}" class="btn btn-outline-medibook">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

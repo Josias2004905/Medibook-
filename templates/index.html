@@ -1,0 +1,769 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}MediBook — Healthcare, Elevated{% endblock %}
+
+{% block extra_css %}
+<style>
+.doctor-sphere-section { overflow: hidden; }
+.doctor-sphere-root {
+    position: relative; user-select: none; cursor: grab; touch-action: none;
+}
+.doctor-sphere-root.is-dragging { cursor: grabbing; }
+.doctor-sphere-stage { position: relative; transform-style: preserve-3d; }
+.doctor-sphere-node {
+    position: absolute; display: flex; flex-direction: column; align-items: center;
+    transition: transform 0.15s ease, opacity 0.15s ease; pointer-events: auto;
+}
+.doctor-sphere-avatar {
+    width: 100%; aspect-ratio: 1; border-radius: 50%; overflow: hidden;
+    border: 2px solid rgba(10,255,233,0.35);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 20px rgba(10,255,233,0.08);
+    background: linear-gradient(145deg, var(--bg-surface), var(--bg-deep));
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.doctor-sphere-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.doctor-sphere-initials {
+    font-family: var(--font-heading); font-weight: 800; font-size: 1.1rem;
+    color: var(--primary);
+}
+.doctor-sphere-node-label {
+    margin-top: 6px; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.04em;
+    color: rgba(240,244,255,0.55); white-space: nowrap; text-transform: uppercase;
+}
+.doctor-sphere-node.is-hovered .doctor-sphere-avatar,
+.doctor-sphere-node.is-selected .doctor-sphere-avatar {
+    border-color: var(--primary);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.5), 0 0 28px rgba(10,255,233,0.2);
+}
+.doctor-sphere-node.is-selected .doctor-sphere-node-label { color: var(--primary); }
+.doctor-sphere-panel {
+    background: var(--gradient-card); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg); padding: 2rem; min-height: 320px;
+    box-shadow: var(--shadow-card); backdrop-filter: blur(12px);
+}
+.doctor-sphere-panel-icon {
+    width: 56px; height: 56px; border-radius: 50%; margin-bottom: 1rem;
+    background: rgba(10,255,233,0.1); border: 1px solid var(--border-accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; color: var(--primary);
+}
+.doctor-sphere-panel-photo img,
+.doctor-sphere-panel-photo .doctor-sphere-initials-lg {
+    width: 72px; height: 72px; border-radius: 50%; object-fit: cover;
+    border: 2px solid var(--border-accent);
+}
+.doctor-sphere-panel-photo .doctor-sphere-initials-lg {
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg-surface); font-family: var(--font-heading);
+    font-weight: 800; font-size: 1.25rem; color: var(--primary);
+}
+@media (max-width: 991px) {
+    .doctor-sphere-panel { margin-top: 1rem; min-height: auto; }
+}
+.doctor-marquee-bg {
+    position: absolute; top: 0; right: 0; width: 300px; height: 100%;
+    pointer-events: none; z-index: 0; overflow: hidden;
+}
+.doctor-marquee-item {
+    display: flex; flex-direction: column; align-items: flex-end;
+    white-space: nowrap; text-align: right; line-height: 1.2;
+    padding: 1rem 1.5rem;
+}
+.doctor-marquee-item .dm-name {
+    font-size: 1.1rem; font-weight: 700; font-family: var(--font-heading);
+    color: var(--primary);
+}
+.doctor-marquee-item .dm-specialty {
+    font-size: 0.75rem; font-weight: 500; letter-spacing: 0.05em;
+    text-transform: uppercase; color: rgba(240,244,255,0.5);
+}
+.doctor-marquee-bg [data-slot="marquee"] {
+    --duration: 40s; --gap: 1rem;
+    display: flex; flex-direction: column; overflow: hidden;
+    height: 100%;
+}
+.dm-track {
+    display: flex; flex-direction: column;
+    animation: animate-marquee-vertical var(--duration) linear infinite;
+}
+.dm-rep {
+    flex: 0 0 auto; display: flex; flex-direction: column;
+    gap: var(--gap);
+}
+@keyframes animate-marquee-vertical {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-25%); }
+}
+.specialty-marquee-section { padding: 6rem 0; overflow: hidden; }
+.perspective-marquee-item:hover { color: var(--primary) !important; }
+.perspective-marquee-item:focus-visible {
+    outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 4px;
+}
+@media (max-width: 768px) {
+    .perspective-marquee { height: 140px !important; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ═══ Hero Section ═══ -->
+<section class="hero-section" data-no-particles>
+
+  <!-- VIDEO BACKGROUND LAYER -->
+  <div class="hero-video-wrapper">
+    <video
+      class="hero-video"
+      autoplay
+      muted
+      loop
+      playsinline
+      preload="auto"
+      poster="{% static 'images/hero_poster.jpg' %}"
+      id="heroVideo"
+    >
+      <source src="{% static 'videos/operation_room.webm' %}" type="video/webm">
+      <source src="{% static 'videos/operation_room.mp4' %}" type="video/mp4">
+    </video>
+    <div class="hero-overlay"></div>
+    <div class="hero-vignette"></div>
+  </div>
+
+  <div class="hero-content page-container">
+    <div class="container text-start">
+        <div class="animate-in">
+            <div class="badge-glow mb-3 animate-in animate-in-delay-1">
+                <i class="fa-solid fa-shield-halved"></i> Trusted by 10,000+ patients
+            </div>
+            <h1 class="hero-title" style="font-size:3.5rem; margin-bottom: 1rem;">
+                Healthcare,<br>
+                <span style="color:var(--primary);">Elevated.</span>
+            </h1>
+            <p class="hero-subtitle" style="font-size:1.1rem; color:rgba(232,240,254,0.8); margin-bottom: 2.5rem;">
+                Find the right specialist, book in seconds, and get AI-powered recommendations — all from one premium platform.
+            </p>
+            <div class="d-flex gap-3 justify-content-start flex-wrap">
+                <a href="{% url 'doctor_list' %}" class="btn-medibook-primary" style="padding:14px 32px;font-size:0.95rem;">
+                    <i class="fa-solid fa-calendar-plus"></i> Book Appointment
+                </a>
+                <a href="{% url 'doctor_list' %}" class="btn btn-outline-medibook" style="padding:13px 31px;font-size:0.95rem;">
+                    <i class="fa-solid fa-user-doctor"></i> Find Doctors
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar mt-5 animate-in animate-in-delay-2">
+            {% for icon,val,label,color in stats %}
+            <div class="stats-bar-item">
+                <div class="stats-bar-number font-mono" style="color:var(--primary);">{{ val }}</div>
+                <div class="stats-bar-label">{{ label }}</div>
+            </div>
+            {% if not forloop.last %}<div class="stats-bar-divider"></div>{% endif %}
+            {% empty %}
+            <div class="stats-bar-item">
+                <div class="stats-bar-number font-mono" data-count="50">50+</div>
+                <div class="stats-bar-label">Expert Doctors</div>
+            </div>
+            <div class="stats-bar-divider"></div>
+            <div class="stats-bar-item">
+                <div class="stats-bar-number font-mono" data-count="10000">10,000+</div>
+                <div class="stats-bar-label">Patients</div>
+            </div>
+            <div class="stats-bar-divider"></div>
+            <div class="stats-bar-item">
+                <div class="stats-bar-number font-mono" data-count="12">12</div>
+                <div class="stats-bar-label">Specialties</div>
+            </div>
+            <div class="stats-bar-divider"></div>
+            <div class="stats-bar-item">
+                <div class="stats-bar-number font-mono" style="color:var(--warning);">4.9★</div>
+                <div class="stats-bar-label">Avg Rating</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ═══ Specialties — Perspective Marquee ═══ -->
+<section class="z-1 specialty-marquee-section">
+    <div class="container">
+        <div class="section-header text-center mb-2">
+            <span class="section-label">Specialties</span>
+            <h2 class="section-title">Medical <span style="color:var(--primary);">Specialties</span></h2>
+            <p class="section-subtitle">Browse our comprehensive range of world-class medical specialties</p>
+        </div>
+    </div>
+    <div id="specialty-marquee-mount" class="w-100" data-fallback-url="{% url 'doctor_list' %}" aria-label="Scrolling medical specialties"></div>
+    {{ specialty_marquee_data|json_script:"specialty-marquee-data" }}
+    <div class="container text-center mt-4">
+        <a href="{% url 'doctor_list' %}" class="btn-outline-medibook">
+            Browse All Specialties <i class="fa-solid fa-arrow-right ms-1"></i>
+        </a>
+    </div>
+</section>
+
+<!-- ═══ Featured Doctors — 3D Sphere ═══ -->
+<section class="z-1 doctor-sphere-section" style="padding:6rem 0;position:relative;overflow:hidden;">
+    <div id="doctor-marquee-bg" class="doctor-marquee-bg" aria-hidden="true"></div>
+    <div class="container">
+        <div class="section-header text-center">
+            <span class="section-label">Trusted Professionals</span>
+            <h2 class="section-title" style="margin-bottom:8px;">Top Rated <span style="color:var(--primary);">Doctors</span></h2>
+            <p class="section-subtitle">Drag to explore our highest-rated specialists — click any profile to view details</p>
+        </div>
+
+        {% if featured_doctors %}
+        <div class="row align-items-center g-5 mt-2">
+            <div class="col-lg-6 d-flex justify-content-center">
+                <div id="doctor-sphere-mount" aria-label="Interactive 3D doctor gallery"></div>
+            </div>
+            <div class="col-lg-6">
+                <div id="doctor-sphere-panel" class="doctor-sphere-panel">
+                    <div id="doctor-sphere-placeholder" class="doctor-sphere-panel-inner">
+                        <div class="doctor-sphere-panel-icon"><i class="fa-solid fa-user-doctor"></i></div>
+                        <h3 style="font-family:var(--font-heading);font-weight:700;color:var(--text-primary);margin-bottom:0.5rem;">Explore Our Specialists</h3>
+                        <p style="color:var(--text-secondary);font-size:0.9rem;line-height:1.7;margin:0;">Rotate the sphere to browse top-rated doctors. Click a profile to see their specialty, rating, and book instantly.</p>
+                        <p class="mt-3 mb-0" style="color:var(--text-muted);font-size:0.78rem;"><i class="fa-solid fa-hand-pointer me-1"></i> Drag · Click · Book</p>
+                    </div>
+                    <div id="doctor-sphere-detail" class="doctor-sphere-panel-inner" hidden>
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div id="dsp-avatar-wrap" class="doctor-sphere-panel-photo"></div>
+                            <div>
+                                <h3 id="dsp-name" style="font-family:var(--font-heading);font-weight:700;color:var(--text-primary);font-size:1.15rem;margin:0;"></h3>
+                                <div id="dsp-specialty" style="color:var(--primary);font-size:0.85rem;font-weight:500;margin-top:2px;"></div>
+                                <div class="rating-stars mt-1">
+                                    ★★★★★ <span id="dsp-rating" style="color:var(--text-muted);font-size:0.8rem;margin-left:4px;"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <p id="dsp-bio" style="color:var(--text-secondary);font-size:0.875rem;line-height:1.75;margin-bottom:1.25rem;"></p>
+                        <div class="d-flex justify-content-between align-items-center pt-3" style="border-top:1px solid var(--border-subtle);">
+                            <span id="dsp-fee" style="color:var(--primary);font-family:var(--font-heading);font-weight:700;font-size:1.2rem;"></span>
+                            <a id="dsp-book" href="#" class="btn-medibook-primary btn-sm">Book Now</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{ doctor_sphere_data|json_script:"doctor-sphere-data" }}
+        {% else %}
+        <div class="text-center py-5" style="color:var(--text-muted);">
+            <i class="fa-solid fa-user-doctor fa-3x mb-3" style="opacity:0.3;"></i>
+            <p>No doctors available yet. Check back soon!</p>
+        </div>
+        {% endif %}
+
+        <div class="text-center mt-5">
+            <a href="{% url 'doctor_list' %}" class="btn-outline-medibook">View All Doctors <i class="fa-solid fa-arrow-right ms-1"></i></a>
+        </div>
+    </div>
+</section>
+
+<!-- ═══ How It Works — Radial Orbital Timeline ═══ -->
+<section class="z-1" style="padding:4rem 0 4rem;overflow:visible;">
+    <div class="container">
+        <div class="section-header text-center">
+            <span class="section-label">Simple Process</span>
+            <h2 class="section-title">How It <span style="color:var(--primary);">Works</span></h2>
+            <p class="section-subtitle">Five steps to better health — from signup to care</p>
+        </div>
+    </div>
+    <p class="text-center mb-0" style="color:var(--text-muted);font-size:0.82rem;margin-top:-0.5rem;">
+        <i class="fa-solid fa-hand-pointer me-1"></i>Click any step to explore — the orbit pauses while you read
+    </p>
+    <div id="orbit-root" style="position:relative;width:100%;max-width:1040px;height:960px;margin:0 auto;overflow:visible;">
+        <div id="orbit-stage" style="position:absolute;inset:0;">
+            <div id="orbit-hub" style="position:absolute;top:50%;left:50%;width:0;height:0;z-index:1;">
+                <div id="orbit-ring" style="position:absolute;top:0;left:0;width:440px;height:440px;margin:-220px 0 0 -220px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);pointer-events:none;z-index:1;"></div>
+                <div id="orbit-center" style="position:absolute;top:0;left:0;width:128px;height:128px;margin:-64px 0 0 -64px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#0066CC,#00B894);display:flex;align-items:center;justify-content:center;box-shadow:0 0 32px rgba(10,255,233,0.2);animation:orbit-center-pulse 3s ease-in-out infinite;z-index:50;pointer-events:none;">
+                    <div style="position:absolute;width:160px;height:160px;margin:-16px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);animation:orbit-ping 2s infinite;opacity:0.45;"></div>
+                    <div style="position:absolute;width:192px;height:192px;margin:-32px;border-radius:50%;border:1px solid rgba(255,255,255,0.08);animation:orbit-ping 2s infinite 0.5s;opacity:0.3;"></div>
+                    <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.85);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+@keyframes orbit-center-pulse {
+    0%,100% { transform:scale(1); }
+    50% { transform:scale(1.04); }
+}
+@keyframes orbit-ping {
+    0%,100% { transform:scale(1); opacity:0.5; }
+    50% { transform:scale(1.12); opacity:0.1; }
+}
+@keyframes related-dot-pulse {
+    0%,100% { box-shadow:0 0 0 0 rgba(255,255,255,0.25); }
+    50% { box-shadow:0 0 0 14px rgba(255,255,255,0); }
+}
+@keyframes related-glow-pulse {
+    0%,100% { opacity:0.6; transform:scale(1); }
+    50% { opacity:1; transform:scale(1.06); }
+}
+.orbit-node {
+    position:absolute;cursor:pointer;transition:transform 0.7s cubic-bezier(0.34,1.56,0.64,1), opacity 0.7s ease, z-index 0s;
+}
+.orbit-node.active {
+    z-index:300 !important;
+}
+.orbit-node .on-glow {
+    position:absolute;top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 70%);
+    pointer-events:none;transition:all 0.4s ease;
+}
+.orbit-node.pulse .on-glow {
+    animation:related-glow-pulse 1s infinite;
+}
+.orbit-node .on-dot {
+    position:relative;
+    width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    border:2px solid rgba(255,255,255,0.40);background:rgba(6,11,20,0.9);color:#F0F4FF;font-size:1.6rem;
+    transition:all 0.4s ease;
+}
+.orbit-node.active .on-dot {
+    background:#ffffff;color:#060B14;border-color:#ffffff;transform:scale(1.5);
+    box-shadow:0 0 30px rgba(255,255,255,0.25);
+}
+.orbit-node.pulse .on-dot {
+    background:rgba(255,255,255,0.5);color:#060B14;border-color:#ffffff;
+    animation:related-dot-pulse 1s infinite;
+}
+.orbit-node .on-label {
+    position:absolute;top:96px;left:50%;transform:translateX(-50%);white-space:nowrap;
+    font-size:1.44rem;font-weight:600;letter-spacing:0.03em;color:rgba(240,244,255,0.55);transition:all 0.4s ease;text-align:center;
+}
+.orbit-node.active .on-label { color:#ffffff;transform:translateX(-50%) scale(1.25); }
+.orbit-node .on-card {
+    position:absolute;top:160px;left:50%;transform:translateX(-50%);width:544px;border-radius:14px;
+    background:rgba(6,11,20,0.97);border:1px solid rgba(255,255,255,0.35);
+    padding:32px;opacity:0;pointer-events:none;transition:opacity 0.35s ease, transform 0.35s ease;z-index:400;
+    box-shadow:0 24px 48px rgba(0,0,0,0.55),0 0 0 1px rgba(255,255,255,0.06);
+    overflow:visible;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+}
+.orbit-node.active .on-card { opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(4px); }
+.orbit-node .on-card .oc-connector {
+    position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:2px;height:8px;background:rgba(255,255,255,0.4);
+}
+.orbit-node .on-card .oc-badge-row {
+    display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;
+}
+.orbit-node .on-card .oc-badge {
+    display:inline-block;font-size:1rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+    padding:4px 16px;border-radius:20px;border:1px solid transparent;
+}
+.orbit-node .on-card .oc-badge.completed { background:#000;color:#fff;border-color:#fff; }
+.orbit-node .on-card .oc-badge.progress { background:#fff;color:#000;border-color:#000; }
+.orbit-node .on-card .oc-badge.pending { background:rgba(0,0,0,0.4);color:#fff;border-color:rgba(255,255,255,0.5); }
+.orbit-node .on-card .oc-date {
+    font-size:1.1rem;font-family:monospace;color:rgba(255,255,255,0.5);
+}
+.orbit-node .on-card .oc-energy { margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08); }
+.orbit-node .on-card .oc-energy-row {
+    display:flex;justify-content:space-between;align-items:center;font-size:1.2rem;margin-bottom:6px;
+}
+.orbit-node .on-card .oc-energy-label { display:flex;align-items:center;color:rgba(232,240,254,0.5); }
+.orbit-node .on-card .oc-energy-label svg { width:16px;height:16px;margin-right:8px;flex-shrink:0; }
+.orbit-node .on-card .oc-energy-pct { font-family:monospace;color:rgba(232,240,254,0.7); }
+.orbit-node .on-card .oc-energy-bar { height:6px;border-radius:4px;background:rgba(255,255,255,0.08);overflow:hidden; }
+.orbit-node .on-card .oc-energy-fill { height:100%;border-radius:4px;background:linear-gradient(90deg,#0066CC,var(--primary));transition:width 0.6s ease; }
+.orbit-node .on-card .oc-conn { margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08); }
+.orbit-node .on-card .oc-conn-header { display:flex;align-items:center;margin-bottom:8px; }
+.orbit-node .on-card .oc-conn-header svg { width:16px;height:16px;color:rgba(232,240,254,0.5);margin-right:8px;flex-shrink:0; }
+.orbit-node .on-card .oc-conn-header span { font-size:1rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;color:rgba(232,240,254,0.5); }
+.orbit-node .on-card .oc-conn-list { display:flex;flex-wrap:wrap;gap:6px; }
+.orbit-node .on-card .oc-conn-btn {
+    display:inline-flex;align-items:center;height:40px;padding:0 16px;font-size:1.2rem;
+    border:1px solid rgba(255,255,255,0.15);border-radius:0;background:transparent;
+    color:rgba(232,240,254,0.7);cursor:pointer;transition:all 0.2s;
+}
+.orbit-node .on-card .oc-conn-btn:hover {
+    background:rgba(255,255,255,0.08);color:#fff;border-color:rgba(255,255,255,0.3);
+}
+.orbit-node .on-card .oc-conn-btn svg {
+    width:14px;height:14px;margin-left:6px;color:rgba(232,240,254,0.4);
+}
+.orbit-node .on-card .oc-badge-row {
+    display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;
+}
+.orbit-node .on-card .oc-badge {
+    display:inline-block;font-size:0.55rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+    padding:2px 10px;border-radius:20px;border:1px solid transparent;
+}
+.orbit-node .on-card .oc-badge.completed { background:#000;color:#fff;border-color:#fff; }
+.orbit-node .on-card .oc-badge.progress { background:#fff;color:#000;border-color:#000; }
+.orbit-node .on-card .oc-badge.pending { background:rgba(0,0,0,0.4);color:#fff;border-color:rgba(255,255,255,0.5); }
+.orbit-node .on-card .oc-date {
+    font-size:0.65rem;font-family:monospace;color:rgba(255,255,255,0.5);
+}
+.orbit-node .on-card .oc-title { font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:6px; }
+.orbit-node .on-card .oc-desc { font-size:1.56rem;color:rgba(232,240,254,0.82);line-height:1.7;margin:0; }
+.orbit-node .on-card .oc-energy { margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08); }
+.orbit-node .on-card .oc-energy-row {
+    display:flex;justify-content:space-between;align-items:center;font-size:0.72rem;margin-bottom:4px;
+}
+.orbit-node .on-card .oc-energy-label { display:flex;align-items:center;color:rgba(232,240,254,0.5); }
+.orbit-node .on-card .oc-energy-label svg { width:10px;height:10px;margin-right:6px;flex-shrink:0; }
+.orbit-node .on-card .oc-energy-pct { font-family:monospace;color:rgba(232,240,254,0.7); }
+.orbit-node .on-card .oc-energy-bar { height:4px;border-radius:4px;background:rgba(255,255,255,0.08);overflow:hidden; }
+.orbit-node .on-card .oc-energy-fill { height:100%;border-radius:4px;background:linear-gradient(90deg,#0066CC,var(--primary));transition:width 0.6s ease; }
+.orbit-node .on-card .oc-conn { margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08); }
+.orbit-node .on-card .oc-conn-header { display:flex;align-items:center;margin-bottom:6px; }
+.orbit-node .on-card .oc-conn-header svg { width:10px;height:10px;color:rgba(232,240,254,0.5);margin-right:6px;flex-shrink:0; }
+.orbit-node .on-card .oc-conn-header span { font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;color:rgba(232,240,254,0.5); }
+.orbit-node .on-card .oc-conn-list { display:flex;flex-wrap:wrap;gap:4px; }
+.orbit-node .on-card .oc-conn-btn {
+    display:inline-flex;align-items:center;height:24px;padding:0 8px;font-size:0.7rem;
+    border:1px solid rgba(255,255,255,0.15);border-radius:0;background:transparent;
+    color:rgba(232,240,254,0.7);cursor:pointer;transition:all 0.2s;
+}
+.orbit-node .on-card .oc-conn-btn:hover {
+    background:rgba(255,255,255,0.08);color:#fff;border-color:rgba(255,255,255,0.3);
+}
+.orbit-node .on-card .oc-conn-btn svg {
+    width:8px;height:8px;margin-left:4px;color:rgba(232,240,254,0.4);
+}
+</style>
+
+<script>
+(function(){
+var orbitRoot = document.getElementById('orbit-root');
+var orbitStage = document.getElementById('orbit-stage');
+var orbitHub = document.getElementById('orbit-hub');
+var radius = 216;
+
+var stepsData = [
+    { id:1, icon:'fa-user-plus',       label:'Register or Log In',     title:'Create Your Account',            desc:'Sign up in under a minute with email or log back into your existing MediBook profile. Save your medical history, manage appointments for family members, and pick up right where you left off — securely, from any device.',  related:[2], energy:100, status:'completed' },
+    { id:2, icon:'fa-brain',           label:'Consult AI Advisor',     title:'Talk to Our AI Health Guide',    desc:'Not sure which specialist you need? Describe your symptoms in everyday language — a persistent cough, sharp knee pain, recurring migraines — and our AI orientation engine instantly maps your words to the right medical specialty, so you never waste time booking the wrong appointment.', related:[1,3], energy:75, status:'in-progress' },
+    { id:3, icon:'fa-user-doctor',     label:'Find a Doctor',          title:'Discover Your Ideal Specialist', desc:'Browse verified doctors hand-picked for your suggested specialty. Compare credentials, read real patient reviews, check consultation fees, and see who has openings this week — then shortlist the specialists who feel like the right fit for you.',                                          related:[2,4], energy:50, status:'pending' },
+    { id:4, icon:'fa-calendar-plus',   label:'Book a Slot',            title:'Pick Your Time',                 desc:'Choose from live availability on your doctor\'s calendar and lock in a slot that works for your schedule. No hold music, no callback tags — your appointment is reserved the moment you confirm.',                                                                                           related:[3,5], energy:30, status:'pending' },
+    { id:5, icon:'fa-circle-check',    label:'Get Confirmed',          title:'Receive Confirmation & Care',    desc:'Get instant email and in-app confirmation, smart reminders before your visit, and a direct chat line with your doctor. After your consultation, access follow-up notes, prescriptions, and leave a review — all in one place.', related:[4], energy:15, status:'pending' },
+];
+
+var nodes = [];
+var angle = 0;
+var autoRotate = true;
+var activeId = null;
+var intervalId = null;
+
+function nodeTransform(aRad) {
+    var x = radius * Math.cos(aRad);
+    var y = radius * Math.sin(aRad);
+    return 'translate(-50%, -50%) translate(' + x + 'px, ' + y + 'px)';
+}
+
+function nodeZIndex(aRad, isActive) {
+    if (isActive) return 300;
+    return Math.round(10 + 40 * (1 + Math.cos(aRad)));
+}
+
+function nodeOpacity(aRad, isActive) {
+    if (isActive) return 1;
+    return Math.max(0.45, Math.min(1, 0.45 + 0.55 * ((1 + Math.sin(aRad)) / 2)));
+}
+
+function getBadgeClass(status) {
+    if (status === 'completed') return 'completed';
+    if (status === 'in-progress') return 'progress';
+    return 'pending';
+}
+
+function getBadgeLabel(status) {
+    if (status === 'completed') return 'COMPLETE';
+    if (status === 'in-progress') return 'IN PROGRESS';
+    return 'PENDING';
+}
+
+stepsData.forEach(function(s, i) {
+    var initAngle = (i / stepsData.length) * 360;
+    var el = document.createElement('div');
+    el.className = 'orbit-node';
+    el.dataset.id = s.id;
+    el.style.left = '50%';
+    el.style.top = '50%';
+
+    var aRad = initAngle * Math.PI / 180;
+    el.style.transform = nodeTransform(aRad);
+    el.style.zIndex = nodeZIndex(aRad, false);
+    el.style.opacity = nodeOpacity(aRad, false);
+
+    var icon = s.icon;
+    var label = s.label;
+    var title = s.title;
+    var desc = s.desc;
+    var energy = s.energy;
+    var related = s.related;
+    var badgeClass = getBadgeClass(s.status);
+    var badgeLabel = getBadgeLabel(s.status);
+
+    var glowSize = Math.min(120, energy * 0.5 + 72);
+
+    var relatedHtml = '';
+    if (related.length > 0) {
+        relatedHtml += '<div class="oc-conn"><div class="oc-conn-header">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>' +
+            '<span>Connected Nodes</span></div><div class="oc-conn-list">';
+        for (var ri = 0; ri < related.length; ri++) {
+            var relItem = stepsData[related[ri] - 1];
+            relatedHtml += '<button class="oc-conn-btn" data-rel-id="' + related[ri] + '">' +
+                relItem.title +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>' +
+                '</button>';
+        }
+        relatedHtml += '</div></div>';
+    }
+
+    el.innerHTML =
+        '<div class="on-glow" style="width:' + glowSize + 'px;height:' + glowSize + 'px;"></div>' +
+        '<div class="on-dot"><i class="fa-solid ' + icon + '"></i></div>' +
+        '<div class="on-label">' + label + '</div>' +
+        '<div class="on-card">' +
+            '<div class="oc-connector"></div>' +
+            '<div class="oc-badge-row">' +
+                '<span class="oc-badge ' + badgeClass + '">' + badgeLabel + ' \u00B7 Step ' + s.id + '/5</span>' +
+                '<span class="oc-date">' + s.id + '</span>' +
+            '</div>' +
+            '<div class="oc-title">' + title + '</div>' +
+            '<p class="oc-desc">' + desc + '</p>' +
+            '<div class="oc-energy">' +
+                '<div class="oc-energy-row">' +
+                    '<span class="oc-energy-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Energy Level</span>' +
+                    '<span class="oc-energy-pct">' + energy + '%</span>' +
+                '</div>' +
+                '<div class="oc-energy-bar"><div class="oc-energy-fill" style="width:' + energy + '%;"></div></div>' +
+            '</div>' +
+            relatedHtml +
+        '</div>';
+
+    el.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var id = parseInt(this.dataset.id);
+        if (activeId === id) { closeAll(); return; }
+        closeAll();
+        activeId = id;
+        autoRotate = false;
+        this.classList.add('active');
+
+        var node = null;
+        for (var n = 0; n < nodes.length; n++) {
+            if (nodes[n].id === id) { node = nodes[n]; break; }
+        }
+        if (node) {
+            angle = (270 - node.initAngle + 360) % 360;
+            repositionAll();
+            var rel = stepsData[id - 1].related;
+            for (var r = 0; r < rel.length; r++) {
+                for (var n2 = 0; n2 < nodes.length; n2++) {
+                    if (nodes[n2].id === rel[r]) nodes[n2].el.classList.add('pulse');
+                }
+            }
+        }
+    });
+
+    el.addEventListener('click', function(e) {
+        var btn = e.target.closest('.oc-conn-btn');
+        if (btn && btn.dataset.relId) {
+            e.stopPropagation();
+            var relId = parseInt(btn.dataset.relId);
+            for (var n = 0; n < nodes.length; n++) {
+                if (nodes[n].id === relId) {
+                    closeAll();
+                    activeId = relId;
+                    autoRotate = false;
+                    nodes[n].el.classList.add('active');
+                    var relNode = null;
+                    for (var nn = 0; nn < nodes.length; nn++) {
+                        if (nodes[nn].id === relId) { relNode = nodes[nn]; break; }
+                    }
+                    if (relNode) {
+                        angle = (270 - relNode.initAngle + 360) % 360;
+                        repositionAll();
+                        var relArr = stepsData[relId - 1].related;
+                        for (var rr = 0; rr < relArr.length; rr++) {
+                            for (var nn2 = 0; nn2 < nodes.length; nn2++) {
+                                if (nodes[nn2].id === relArr[rr]) nodes[nn2].el.classList.add('pulse');
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    });
+
+    orbitHub.appendChild(el);
+    nodes.push({ el:el, initAngle:initAngle, id:s.id });
+});
+
+orbitStage.addEventListener('click', function(e) {
+    if (e.target === orbitStage || e.target.closest('#orbit-ring') || e.target.closest('#orbit-center')) {
+        closeAll();
+    }
+});
+
+function closeAll() {
+    for (var i = 0; i < nodes.length; i++) {
+        nodes[i].el.classList.remove('active', 'pulse');
+    }
+    activeId = null;
+    autoRotate = true;
+}
+
+function repositionAll() {
+    for (var i = 0; i < nodes.length; i++) {
+        var a = (nodes[i].initAngle + angle) * Math.PI / 180;
+        var isActive = nodes[i].el.classList.contains('active');
+        nodes[i].el.style.transform = nodeTransform(a);
+        nodes[i].el.style.zIndex = nodeZIndex(a, isActive);
+        nodes[i].el.style.opacity = nodeOpacity(a, isActive);
+    }
+}
+
+intervalId = setInterval(function() {
+    if (autoRotate) {
+        angle = (angle + 0.3) % 360;
+        repositionAll();
+    }
+}, 50);
+})();
+</script>
+<script>
+  (function() {
+    const video = document.getElementById('heroVideo');
+    if (!video) return;
+
+    const skipAndPlay = () => {
+      video.currentTime = 2;
+      video.play().catch(() => {
+        video.style.display = 'none';
+      });
+    };
+
+    if (video.readyState >= 2) {
+      skipAndPlay();
+    } else {
+      video.addEventListener('canplay', skipAndPlay, { once: true });
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      document.hidden ? video.pause() : video.play().catch(() => {});
+    });
+  })();
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/perspective-marquee.js' %}"></script>
+<script src="{% static 'js/doctor-sphere.js' %}"></script>
+<script>
+(function () {
+    var marqueeEl = document.getElementById('specialty-marquee-data');
+    var marqueeMount = document.getElementById('specialty-marquee-mount');
+    if (marqueeEl && marqueeMount && typeof PerspectiveMarquee !== 'undefined') {
+        var items = JSON.parse(marqueeEl.textContent);
+        if (!items.length) {
+            items = null;
+        }
+        var fontSize = Math.min(72, Math.max(40, window.innerWidth * 0.09));
+        var fallbackUrl = marqueeMount.getAttribute('data-fallback-url') || '#';
+        new PerspectiveMarquee(marqueeMount, items, {
+            fontSize: fontSize,
+            color: '#F0F4FF',
+            fontWeight: 700,
+            pixelsPerFrame: 2,
+            rotateY: -28,
+            rotateX: 8,
+            perspective: 1200,
+            fadeColor: '#060B14',
+            background: 'transparent',
+            speed: 1,
+            height: window.innerWidth < 768 ? 140 : 200
+        });
+    }
+})();
+</script>
+<script>
+(function () {
+    var dataEl = document.getElementById('doctor-sphere-data');
+    var mount = document.getElementById('doctor-sphere-mount');
+    if (!dataEl || !mount || typeof DoctorSphere === 'undefined') return;
+
+    var doctors = JSON.parse(dataEl.textContent);
+    if (!doctors.length) return;
+
+    var placeholder = document.getElementById('doctor-sphere-placeholder');
+    var detail = document.getElementById('doctor-sphere-detail');
+
+    function showDoctor(doc) {
+        placeholder.hidden = true;
+        detail.hidden = false;
+        document.getElementById('dsp-name').textContent = doc.name;
+        document.getElementById('dsp-specialty').textContent = doc.specialty;
+        document.getElementById('dsp-rating').textContent = doc.rating;
+        document.getElementById('dsp-bio').textContent = doc.bio;
+        document.getElementById('dsp-fee').textContent = '$' + doc.fee;
+        document.getElementById('dsp-book').href = doc.url;
+        var wrap = document.getElementById('dsp-avatar-wrap');
+        if (doc.src) {
+            wrap.innerHTML = '<img src="' + doc.src + '" alt="' + doc.name.replace(/"/g, '&quot;') + '">';
+        } else {
+            wrap.innerHTML = '<div class="doctor-sphere-initials-lg">' + doc.initials + '</div>';
+        }
+    }
+
+    var sphere = new DoctorSphere(mount, doctors, {
+        containerSize: Math.min(460, window.innerWidth - 48),
+        sphereRadius: 165,
+        autoRotate: true,
+        autoRotateSpeed: 0.22
+    });
+
+    sphere.onSelect = showDoctor;
+    showDoctor(doctors[0]);
+    sphere.selectedIndex = 0;
+    sphere._render();
+
+    window.addEventListener('resize', function () {
+        var size = Math.min(460, window.innerWidth - 48);
+        if (Math.abs(size - sphere.opts.containerSize) > 40) {
+            sphere.destroy();
+            sphere = new DoctorSphere(mount, doctors, {
+                containerSize: size,
+                sphereRadius: size * 0.36,
+                autoRotate: true,
+                autoRotateSpeed: 0.22
+            });
+            sphere.onSelect = showDoctor;
+            sphere.selectedIndex = 0;
+            sphere._render();
+        }
+    });
+
+    // Doctor marquee background — matches React Marquee format
+    var bg = document.getElementById('doctor-marquee-bg');
+    if (bg && doctors.length) {
+        var repeat = 4;
+        var childrenHtml = '';
+        for (var d = 0; d < doctors.length; d++) {
+            var doc = doctors[d];
+            childrenHtml += '<div class="doctor-marquee-item">'
+                + '<div class="dm-name">' + doc.name.replace(/"/g, '&quot;') + '</div>'
+                + '<div class="dm-specialty">' + (doc.specialty || '').replace(/"/g, '&quot;') + '</div>'
+                + '</div>';
+        }
+        var repeatsHtml = '';
+        for (var r = 0; r < repeat; r++) {
+            repeatsHtml += '<div class="dm-rep">' + childrenHtml + '</div>';
+        }
+        bg.innerHTML = '<div data-slot="marquee" role="marquee" aria-label="Featured doctors" aria-live="off" tabindex="0">'
+            + '<div class="dm-track">' + repeatsHtml + '</div></div>';
+    }
+})();
+</script>
+{% endblock %}

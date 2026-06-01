@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% block title %}Dr. {{ doctor.user.get_full_name }} — MediBook{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row g-4">
+        <!-- Doctor Profile -->
+        <div class="col-lg-4">
+            <div class="card-dark p-4 text-center sticky-top" style="top:80px;">
+                {% if doctor.user.profile_picture %}
+                <img src="{{ doctor.user.profile_picture.url }}" width="120" height="120" class="rounded-circle object-fit-cover mb-3" style="border:3px solid rgba(0,102,204,0.4);">
+                {% else %}
+                <div style="width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,#0066CC,#00B894);display:flex;align-items:center;justify-content:center;font-size:2.5rem;font-weight:700;color:#fff;margin:0 auto 1rem;">
+                    {{ doctor.user.first_name|first|upper }}{{ doctor.user.last_name|first|upper }}
+                </div>
+                {% endif %}
+                <h4 style="color:#fff;font-weight:800;">Dr. {{ doctor.user.get_full_name }}</h4>
+                <div style="color:#4DA6FF;margin-bottom:0.5rem;">{{ doctor.specialty.name|default:"General Practice" }}</div>
+                <div style="color:#F39C12;margin-bottom:1rem;">
+                    {% for i in "12345" %}★{% endfor %}
+                    <span style="color:rgba(232,240,254,0.5);font-size:0.9rem;">({{ doctor.rating }})</span>
+                </div>
+                <div class="d-flex justify-content-center gap-3 mb-3" style="font-size:0.85rem;color:rgba(232,240,254,0.6);">
+                    <div><i class="fas fa-briefcase me-1"></i>{{ doctor.experience_years }} yrs</div>
+                    <div style="color:#00B894;font-weight:700;">${{ doctor.consultation_fee }}</div>
+                </div>
+                {% if doctor.clinic_address %}
+                <p style="color:rgba(232,240,254,0.5);font-size:0.82rem;"><i class="fas fa-map-marker-alt me-1"></i>{{ doctor.clinic_address }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Details & Booking -->
+        <div class="col-lg-8">
+            <!-- Bio -->
+            {% if doctor.bio %}
+            <div class="card-dark p-4 mb-4">
+                <h5 style="color:#fff;font-weight:700;margin-bottom:1rem;"><i class="fas fa-info-circle me-2 text-primary"></i>About</h5>
+                <p style="color:rgba(232,240,254,0.7);">{{ doctor.bio }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Slot Picker -->
+            <div class="card-dark p-4 mb-4">
+                <h5 style="color:#fff;font-weight:700;margin-bottom:1.25rem;">
+                    <i class="fas fa-calendar-alt me-2 text-success"></i>Available Appointments
+                </h5>
+
+                {% if user.is_authenticated and user.role == 'patient' %}
+                <!-- Date tabs -->
+                <div class="mb-3" id="dateTabs" style="overflow-x:auto;white-space:nowrap;padding-bottom:0.5rem;">
+                    {% for date, slots in slots_by_date.items %}
+                    <button class="btn btn-sm date-tab me-2 mb-2" data-date="{{ date|date:'Y-m-d' }}"
+                            style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#E8F0FE;border-radius:10px;padding:0.5rem 1rem;white-space:nowrap;transition:all 0.2s;">
+                        <div style="font-weight:700;">{{ date|date:'D' }}</div>
+                        <div style="font-size:0.75rem;color:rgba(232,240,254,0.6);">{{ date|date:'M j' }}</div>
+                        <div style="font-size:0.7rem;color:#00B894;">{{ slots|length }} slots</div>
+                    </button>
+                    {% empty %}
+                    <p style="color:rgba(232,240,254,0.5);">No available slots in the next 7 days.</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Slot grid per date -->
+                {% for date, slots in slots_by_date.items %}
+                <div class="slot-group" id="slots-{{ date|date:'Y-m-d' }}" style="display:none;">
+                    <div class="row g-2">
+                        {% for slot in slots %}
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <a href="{% url 'book_appointment' %}?doctor_id={{ doctor.pk }}&slot_id={{ slot.pk }}"
+                               class="btn w-100" style="background:rgba(0,184,148,0.1);border:1px solid rgba(0,184,148,0.3);color:#00B894;border-radius:10px;font-weight:600;">
+                                {{ slot.start_time|time:'H:i' }}
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div style="background:rgba(0,102,204,0.1);border:1px solid rgba(0,102,204,0.2);border-radius:12px;padding:1.5rem;text-align:center;">
+                    <p style="color:rgba(232,240,254,0.7);margin-bottom:1rem;">Please log in as a patient to book an appointment.</p>
+                    <a href="{% url 'login' %}" class="btn btn-medibook-primary me-2">Login</a>
+                    <a href="{% url 'register' %}" class="btn btn-outline-medibook">Register</a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Reviews -->
+            {% if reviews %}
+            <div class="card-dark p-4">
+                <h5 style="color:#fff;font-weight:700;margin-bottom:1.25rem;"><i class="fas fa-star me-2 text-warning"></i>Patient Reviews</h5>
+                {% for review in reviews %}
+                <div class="mb-3 pb-3" style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong style="color:#E8F0FE;">{{ review.patient.user.get_full_name }}</strong>
+                        <span style="color:#F39C12;">{% for i in "12345"|slice:review.rating %}★{% endfor %}</span>
+                    </div>
+                    <p style="color:rgba(232,240,254,0.6);font-size:0.875rem;margin:0;">{{ review.comment }}</p>
+                    <small style="color:rgba(232,240,254,0.35);">{{ review.created_at|date:'M j, Y' }}</small>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const tabs = document.querySelectorAll('.date-tab');
+const groups = document.querySelectorAll('.slot-group');
+
+function showDate(date) {
+    groups.forEach(g => g.style.display = 'none');
+    tabs.forEach(t => { t.style.background='rgba(255,255,255,0.05)'; t.style.borderColor='rgba(255,255,255,0.1)'; t.style.color='#E8F0FE'; });
+    const group = document.getElementById('slots-' + date);
+    if (group) group.style.display = 'block';
+    const tab = document.querySelector(`[data-date="${date}"]`);
+    if (tab) { tab.style.background='rgba(0,102,204,0.2)'; tab.style.borderColor='rgba(0,102,204,0.5)'; tab.style.color='#4DA6FF'; }
+}
+
+if (tabs.length > 0) {
+    showDate(tabs[0].dataset.date);
+    tabs.forEach(t => t.addEventListener('click', () => showDate(t.dataset.date)));
+}
+</script>
+{% endblock %}

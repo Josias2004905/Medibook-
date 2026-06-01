@@ -1,0 +1,11 @@
+Django>=4.2
+mysqlclient
+gunicorn
+whitenoise
+Pillow
+python-dotenv
+scikit-learn
+django-crispy-forms
+crispy-bootstrap5
+numpy
+flake8

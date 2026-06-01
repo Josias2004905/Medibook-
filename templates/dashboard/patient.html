@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}Patient Dashboard — MediBook{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1><i class="fas fa-tachometer-alt me-2"></i>Patient Dashboard</h1>
+        <p style="color:rgba(232,240,254,0.6);margin:0;">Welcome back, {{ user.first_name }}!</p>
+    </div>
+</div>
+<div class="container pb-5">
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <a href="{% url 'appointment_list' %}" class="stat-card-link">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:rgba(0,102,204,0.2);color:#4DA6FF;"><i class="fas fa-calendar-check"></i></div>
+                    <div class="stat-value" style="color:#4DA6FF;">{{ total_appointments }}</div>
+                    <div class="stat-label">Total Appointments</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'appointment_list' %}?status=confirmed" class="stat-card-link">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:rgba(0,184,148,0.2);color:#00B894;"><i class="fas fa-clock"></i></div>
+                    <div class="stat-value" style="color:#00B894;">{{ upcoming|length }}</div>
+                    <div class="stat-label">Upcoming</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'appointment_list' %}?status=completed" class="stat-card-link">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:rgba(108,92,231,0.2);color:#6C5CE7;"><i class="fas fa-check-double"></i></div>
+                    <div class="stat-value" style="color:#6C5CE7;">{{ past|length }}</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'notification_list' %}" class="stat-card-link">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:rgba(231,76,60,0.2);color:#E74C3C;"><i class="fas fa-bell"></i></div>
+                    <div class="stat-value" style="color:#E74C3C;">{{ notifications|length }}</div>
+                    <div class="stat-label">Unread Alerts</div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Upcoming Appointments -->
+        <div class="col-lg-8">
+            <div class="card-dark p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 style="color:#fff;font-weight:700;margin:0;"><i class="fas fa-calendar-alt me-2 text-primary"></i>Upcoming</h5>
+                    <a href="{% url 'appointment_list' %}?status=confirmed" style="color:#4DA6FF;font-size:0.85rem;">View all</a>
+                </div>
+                {% for appt in upcoming %}
+                <div class="d-flex align-items-center gap-3 py-3" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <div style="width:48px;height:48px;border-radius:12px;background:rgba(0,102,204,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fas fa-user-md" style="color:#4DA6FF;"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div style="font-weight:600;color:#E8F0FE;">Dr. {{ appt.doctor.user.get_full_name }}</div>
+                        <div style="color:rgba(232,240,254,0.5);font-size:0.82rem;">{{ appt.specialty.name|default:"General" }} · {{ appt.time_slot.date|date:'M j' }} at {{ appt.time_slot.start_time|time:'H:i' }}</div>
+                        {% if appt.has_pending_proposal %}
+                        <div style="color:#F39C12;font-size:0.75rem;margin-top:2px;">
+                            <i class="fas fa-clock me-1"></i>Reschedule proposal pending
+                        </div>
+                        {% endif %}
+                    </div>
+                    <span class="badge badge-{{ appt.status }}">{{ appt.get_status_display }}</span>
+                    <a href="{% url 'appointment_detail' appt.pk %}" class="btn btn-sm btn-outline-medibook">View</a>
+                </div>
+                {% empty %}
+                <div class="text-center py-4" style="color:rgba(232,240,254,0.4);">
+                    <i class="fas fa-calendar-plus fa-2x mb-2"></i>
+                    <p class="mb-2">No upcoming appointments</p>
+                    <a href="{% url 'doctor_list' %}" class="btn btn-medibook-primary btn-sm">Book Now</a>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Past Appointments -->
+            <div class="card-dark p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 style="color:#fff;font-weight:700;margin:0;"><i class="fas fa-history me-2 text-secondary"></i>Recent History</h5>
+                    <a href="{% url 'appointment_list' %}" style="color:#4DA6FF;font-size:0.85rem;">View all</a>
+                </div>
+                {% for appt in past %}
+                <div class="d-flex align-items-center gap-3 py-2" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <div style="flex-grow:1;">
+                        <div style="color:#E8F0FE;font-weight:500;">Dr. {{ appt.doctor.user.get_full_name }}</div>
+                        <div style="color:rgba(232,240,254,0.45);font-size:0.8rem;">{{ appt.time_slot.date|date:'M j, Y' }}</div>
+                    </div>
+                    <span class="badge badge-{{ appt.status }}">{{ appt.get_status_display }}</span>
+                </div>
+                {% empty %}
+                <p style="color:rgba(232,240,254,0.4);text-align:center;padding:1rem 0;">No past appointments.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Notifications -->
+            <div class="card-dark p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 style="color:#fff;font-weight:700;margin:0;"><i class="fas fa-bell me-2 text-warning"></i>Notifications</h5>
+                    <a href="{% url 'notification_list' %}" style="color:#4DA6FF;font-size:0.85rem;">All</a>
+                </div>
+                {% for notif in notifications %}
+                <a href="{% if notif.link %}{{ notif.link }}{% else %}{% url 'notification_list' %}{% endif %}" style="text-decoration:none;display:block;">
+                    <div class="mb-2 p-2" style="background:rgba(255,255,255,0.03);border-radius:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+                        <div style="font-weight:600;color:#E8F0FE;font-size:0.85rem;">{{ notif.title }}</div>
+                        <div style="color:rgba(232,240,254,0.5);font-size:0.78rem;">{{ notif.message|truncatechars:60 }}</div>
+                    </div>
+                </a>
+                {% empty %}
+                <p style="color:rgba(232,240,254,0.4);font-size:0.85rem;text-align:center;">No new notifications.</p>
+                {% endfor %}
+            </div>
+
+            <!-- Quick Links -->
+            <div class="card-dark p-4">
+                <h5 style="color:#fff;font-weight:700;margin-bottom:1rem;"><i class="fas fa-bolt me-2 text-warning"></i>Quick Actions</h5>
+                <a href="{% url 'doctor_list' %}" class="btn btn-medibook-primary w-100 mb-2"><i class="fas fa-search me-2"></i>Find Doctor</a>
+                <a href="{% url 'ai_orientation' %}" class="btn btn-outline-medibook w-100 mb-2"><i class="fas fa-brain me-2"></i>AI Symptom Check</a>
+                <a href="{% url 'patient_profile_edit' %}" class="btn btn-outline-medibook w-100 mb-2"><i class="fas fa-heartbeat me-2"></i>Medical Info</a>
+                <a href="{% url 'inbox' %}" class="btn btn-outline-medibook w-100"><i class="fas fa-comments me-2"></i>Messages</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

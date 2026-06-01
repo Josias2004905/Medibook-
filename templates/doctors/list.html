@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Find Doctors — MediBook{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1><i class="fa-solid fa-user-doctor me-2" style="color:var(--primary);"></i>Find a Doctor</h1>
+        <p style="color:var(--text-secondary);margin:8px 0 0;font-size:0.9rem;">{{ doctors.paginator.count|default:doctors|length }} specialists available</p>
+    </div>
+</div>
+
+<div class="container pb-5 z-1">
+    <div class="row g-4">
+        <!-- Sidebar Filter -->
+        <div class="col-lg-3">
+            <div class="card-dark p-4 sticky-top" style="top:84px;">
+                <h6 style="font-family:var(--font-heading);color:var(--text-primary);font-weight:700;margin-bottom:20px;font-size:0.9rem;">
+                    <i class="fa-solid fa-sliders me-2" style="color:var(--primary);"></i>Filters
+                </h6>
+                <form method="get">
+                    <div class="mb-3">
+                        <label class="form-label">Search</label>
+                        <div class="position-relative">
+                            <input type="text" name="q" class="form-control" placeholder="Name or specialty..." value="{{ query }}" style="padding-left:36px;">
+                            <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.8rem;"></i>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Specialty</label>
+                        <select name="specialty" class="form-select">
+                            <option value="">All Specialties</option>
+                            {% for s in specialties %}
+                            <option value="{{ s.pk }}" {% if selected_specialty == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-medibook-primary w-100 mb-2" style="padding:10px;">
+                        <i class="fa-solid fa-filter"></i> Apply
+                    </button>
+                    <a href="{% url 'doctor_list' %}" class="btn-outline-medibook w-100" style="padding:9px;">Clear</a>
+                </form>
+            </div>
+        </div>
+
+        <!-- Doctor Cards -->
+        <div class="col-lg-9">
+            <div class="row g-4">
+                {% for doctor in doctors %}
+                <div class="col-md-6 col-xl-4 animate-on-scroll">
+                    <div class="card-dark p-4 h-100 d-flex flex-column">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            {% if doctor.user.profile_picture %}
+                            <img src="{{ doctor.user.profile_picture.url }}" class="doctor-photo">
+                            {% else %}
+                            <div class="doctor-initials doctor-initials-sm">
+                                {{ doctor.user.first_name|first|upper }}{{ doctor.user.last_name|first|upper }}
+                            </div>
+                            {% endif %}
+                            <div>
+                                <div style="font-family:var(--font-heading);font-weight:700;color:var(--text-primary);font-size:0.95rem;">Dr. {{ doctor.user.get_full_name }}</div>
+                                <div style="color:var(--primary);font-size:0.8rem;font-weight:500;">{{ doctor.specialty.name|default:"General" }}</div>
+                                <div class="rating-stars" style="font-size:0.78rem;">★ {{ doctor.rating }}</div>
+                            </div>
+                        </div>
+                        <p style="color:var(--text-secondary);font-size:0.85rem;flex-grow:1;line-height:1.7;">
+                            {{ doctor.bio|truncatechars:90|default:"Experienced specialist dedicated to quality patient care." }}
+                        </p>
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="chip"><i class="fa-solid fa-briefcase-medical"></i> {{ doctor.experience_years }} yrs</span>
+                            <span class="ms-auto" style="color:var(--primary);font-family:var(--font-heading);font-weight:700;">${{ doctor.consultation_fee }}</span>
+                        </div>
+                        <a href="{% url 'doctor_detail' doctor.pk %}" class="btn-medibook-primary w-100" style="padding:10px;">
+                            View & Book
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center py-5">
+                    <i class="fa-solid fa-magnifying-glass fa-3x mb-3" style="color:var(--text-muted);opacity:0.3;"></i>
+                    <p style="color:var(--text-muted);">No doctors found matching your criteria.</p>
+                    <a href="{% url 'doctor_list' %}" class="btn-outline-medibook">Clear Filters</a>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav class="mt-4 d-flex justify-content-center">
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ query }}&specialty={{ selected_specialty }}">&laquo;</a></li>
+                    {% endif %}
+                    <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+                    {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ query }}&specialty={{ selected_specialty }}">&raquo;</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
