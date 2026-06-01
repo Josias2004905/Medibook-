@@ -1,13 +1,11 @@
 """Views for doctors app — doctor listing, detail, profile management."""
 
-from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, DeleteView
 from django.urls import reverse_lazy
 from django.db.models import Q
 from datetime import date, timedelta
-from django.http import JsonResponse
+
 
 from .models import DoctorProfile, Specialty
 from .forms import DoctorProfileForm, SpecialtyForm
