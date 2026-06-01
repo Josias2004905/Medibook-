@@ -1,7 +1,7 @@
 """Views for appointments app — booking, management, review, chat."""
 
 import json
-from datetime import datetime, date, timedelta
+from datetime import datetime,timedelta
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.urls import reverse
 
-from .models import Appointment, Consultation, Review, ChatMessage
+from .models import Appointment, ChatMessage
 from .forms import (
     AppointmentBookingForm, ConsultationForm, ReviewForm,
     ChatMessageForm, RejectionForm, RescheduleProposalForm,
