@@ -19,6 +19,7 @@ class UserRegistrationTest(TestCase):
             "phone": "123456789",
             "password1": "StrongPass123!",
             "password2": "StrongPass123!",
+            "role": "patient",  # fix: champ requis manquant
         }
         response = self.client.post(reverse("register"), data)
         self.assertEqual(response.status_code, 302)
