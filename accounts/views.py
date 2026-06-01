@@ -1,16 +1,10 @@
 """Views for accounts app — registration, login, logout, profile."""
-
-from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, authenticate
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
-from django.views.generic import UpdateView, TemplateView
 from django.contrib import messages
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse
 from django.db.models import Q
-
-from .models import User
 from .forms import PatientRegistrationForm, UserProfileForm
 from doctors.models import DoctorProfile, Specialty
 from django.db.models import Count
