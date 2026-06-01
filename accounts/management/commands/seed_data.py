@@ -3,8 +3,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from datetime import time, date, timedelta
-import random
+from datetime import time, date
 
 User = get_user_model()
 
