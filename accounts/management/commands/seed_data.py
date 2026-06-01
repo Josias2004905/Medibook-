@@ -80,7 +80,7 @@ class Command(BaseCommand):
                     "bio": doc["bio"],
                     "experience_years": doc["experience_years"],
                     "consultation_fee": doc["fee"],
-                    "clinic_address": f"123 Rue de la Santé, Paris",
+                    "clinic_address": "123 Rue de la Santé, Paris",
                     "is_active": True,
                     "rating": round(random.uniform(3.5, 5.0), 2),
                 },
@@ -167,7 +167,7 @@ class Command(BaseCommand):
                                 "patient": patient,
                                 "doctor": doctor,
                                 "specialty": doctor.specialty,
-                                "reason": f"Consultation de routine",
+                                "reason": "Consultation de routine",
                                 "status": "pending",
                             },
                         )
