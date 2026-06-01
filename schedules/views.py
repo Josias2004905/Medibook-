@@ -1,12 +1,12 @@
 """Views for schedules app — availability, leave, and slot management."""
 
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.views import View
 from django.http import JsonResponse
 from django.urls import reverse_lazy
-from datetime import date, timedelta
+from datetime import timedelta
 
 from .models import Availability, DoctorLeave, TimeSlot
 from .forms import AvailabilityForm, DoctorLeaveForm
