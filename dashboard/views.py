@@ -3,7 +3,7 @@
 from django.views.generic import TemplateView
 
 from django.db.models import Count, Q
-from datetime import timedelta
+from datetime import date
 
 from accounts.mixins import PatientRequiredMixin, DoctorRequiredMixin, AdminRequiredMixin
 from appointments.models import Appointment
