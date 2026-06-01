@@ -1,17 +1,18 @@
 """Views for accounts app — registration, login, logout, profile."""
+
+from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
 from django.contrib import messages
 from django.urls import reverse
-from django.db.models import Q
+from django.db.models import Q, Count
+
 from .forms import PatientRegistrationForm, UserProfileForm
 from doctors.models import DoctorProfile, Specialty
-from django.db.models import Count
 
 
 def _doctor_sphere_data(doctors):
-    """Serialize featured doctors for the 3D sphere on the landing page."""
     items = []
     for d in doctors:
         user = d.user
@@ -37,7 +38,6 @@ def _doctor_sphere_data(doctors):
 
 
 def _specialty_marquee_data(specialties):
-    """Serialize specialties for the perspective marquee."""
     return [
         {
             'name': s.name,
@@ -48,7 +48,6 @@ def _specialty_marquee_data(specialties):
 
 
 def index(request):
-    """Public landing page with featured doctors and specialties."""
     specialties = Specialty.objects.annotate(
         active_doctors_count=Count('doctors', filter=Q(doctors__is_active=True))
     ).all()
@@ -84,7 +83,6 @@ def index(request):
 
 
 class RegisterView(View):
-    """Handles user registration (patient or doctor)."""
     template_name = 'accounts/register.html'
 
     def get(self, request):
@@ -106,7 +104,6 @@ class RegisterView(View):
 
 
 class CustomLoginView(View):
-    """Login view with role-based redirect."""
     template_name = 'accounts/login.html'
 
     def get(self, request):
@@ -121,7 +118,6 @@ class CustomLoginView(View):
         if user is not None:
             login(request, user)
             messages.success(request, f"Welcome back, {user.first_name or user.username}!")
-            # Role-based redirect
             if user.role == 'doctor':
                 return redirect('doctor_dashboard')
             elif user.role == 'admin' or user.is_staff:
@@ -133,8 +129,6 @@ class CustomLoginView(View):
 
 
 class CustomLogoutView(View):
-    """Logout and redirect to home."""
-
     def post(self, request):
         logout(request)
         messages.info(request, "You have been logged out.")
@@ -146,8 +140,6 @@ class CustomLogoutView(View):
 
 
 class DashboardRedirectView(LoginRequiredMixin, View):
-    """Redirects authenticated users to their role-specific dashboard."""
-
     def get(self, request):
         if request.user.role == 'doctor':
             return redirect('doctor_dashboard')
@@ -157,7 +149,6 @@ class DashboardRedirectView(LoginRequiredMixin, View):
 
 
 class ProfileUpdateView(LoginRequiredMixin, View):
-    """Allow users to update their profile."""
     template_name = 'accounts/profile.html'
 
     def get(self, request):
