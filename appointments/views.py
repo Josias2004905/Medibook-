@@ -1,6 +1,6 @@
 """Views for appointments app — booking, management, review, chat."""
 
-import json
+import  json
 from datetime import datetime, date
 
 from django.shortcuts import render, get_object_or_404, redirect
