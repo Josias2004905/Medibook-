@@ -6,7 +6,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.views import View
 from django.http import JsonResponse
 from django.urls import reverse_lazy
-from datetime import timedelta
+from datetime import date
 
 from .models import Availability, DoctorLeave, TimeSlot
 from .forms import AvailabilityForm, DoctorLeaveForm
