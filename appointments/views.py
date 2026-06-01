@@ -419,7 +419,7 @@ class CancelProposalView(LoginRequiredMixin, View):
         Notification.create_for_user(
             user=other_user,
             title="Reschedule Declined",
-            message=f"The proposed reschedule was declined.",
+            message="The proposed reschedule was declined.",
             notification_type='appointment',
             link=reverse('appointment_detail', kwargs={'pk': appt.pk}),
         )
